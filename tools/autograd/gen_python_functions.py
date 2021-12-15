@@ -71,7 +71,9 @@ from typing import Dict, Optional, List, Tuple, Set, Sequence, Callable
 # These functions require manual Python bindings or are not exposed to Python
 _SKIP_PYTHON_BINDINGS = [
     'alias', 'contiguous', 'is_cuda', 'is_sparse', 'is_sparse_csr', 'size', 'stride',
-    '.*_backward', '.*_backward_(out|input|weight|bias)', '.*_forward',
+    # '.*_backward', '.*_backward_(out|input|weight|bias)', 
+    '(?!max_pool2d_with_indices_backward).*_backward', '((?!cudnn_convolution).*_backward_(out|input|weight|bias))',
+    '.*_forward',
     '.*_forward_out', '_unsafe_view', 'tensor', '_?sparse_coo_tensor.*',
     '_?sparse_csr_tensor.*',
     '_arange.*', '_range.*', 'linspace.*', 'logspace.*',

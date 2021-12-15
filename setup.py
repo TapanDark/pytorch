@@ -1076,5 +1076,15 @@ if __name__ == '__main__':
         license='BSD-3',
         keywords='pytorch machine learning',
     )
+
+
+    uu_path = os.path.join(cwd, "uu")
+    setup(
+        name='uu',
+        packages=['uu', 'uu.layers', 'uu.utils'],
+        version='0.1',
+    )
+
+
     if EMIT_BUILD_WARNING:
         print_box(build_update_message)
