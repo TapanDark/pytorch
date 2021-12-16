@@ -57,7 +57,7 @@ def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: Lis
 # might need to create a memo structure. 
 class Pad_info:
     def __init__(self, coord, cur_output_shape, padding_info, input_slice, internal_expand, real_index, opname, \
-        op_idex, local_idex, next_id, local_first, non_disjoint_tile_size):
+        op_idex, local_idex, next_id, local_first, non_disjoint_tile_size, numof_tiles):
         self.coord = coord
         # self.ordering_info = ordering_info # [seg_id, position(0 base), depth(0 base)]
         self.cur_output_shape = cur_output_shape 
@@ -71,10 +71,11 @@ class Pad_info:
         self.next_id = next_id
         self.local_first = local_first
         self.non_disjoint_tile_size = non_disjoint_tile_size
+        self.numof_tiles = numof_tiles #[Nth, Ntw]
         
-    def copy(self): 
-        return type(self)(self.coord, self.cur_output_shape, self.padding_info, \
-            self.input_slice, self.internal_expand, self.real_index, self.opname, self.op_idex, self.local_idex, self.next_id)
+    # def copy(self): 
+    #     return type(self)(self.coord, self.cur_output_shape, self.padding_info, \
+    #         self.input_slice, self.internal_expand, self.real_index, self.opname, self.op_idex, self.local_idex, self.next_id)
 
     def __repr__(self) -> str:
         rep = self.opname +"[" +str(self.op_idex)+","+str(self.local_idex) + "]" +' PI( <' + "".join([str(x)+"," for x in self.coord]) + '>,\n <otileshape ' + \
@@ -85,7 +86,7 @@ class Pad_info:
                     "".join([str(x)+"," for x in self.real_index]) + '>, \n <ndtsize ' + \
                     "".join([str(x)+"," for x in self.non_disjoint_tile_size]) + '>, \n ' + \
                         " local_first " + str(self.local_first) +'\n' + \
-                        " next_id " + str(self.next_id) + ")\n"
+                        " next_id " + str(self.next_id) + ")\n  numof tiles " + "".join([str(x)+"," for x in self.numof_tiles]) + "\n"
         return rep
 
 
@@ -164,7 +165,7 @@ def compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg, shape_dict, 
                 real_index = input_slice
 
                 opname = "fake"
-                pi = Pad_info(output_tile_coord, cur_output_shape, padding_info, input_slice, (), real_index, opname, -11, -11, -11, False, [])
+                pi = Pad_info(output_tile_coord, cur_output_shape, padding_info, input_slice, (), real_index, opname, -11, -11, -11, False, [], [nTh, nTw])
                 fwd_info_dict[-11] = pi
 
             if isinstance(op, conv2d.TiledConv2d):
@@ -190,7 +191,7 @@ def compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg, shape_dict, 
                     local_first = True
                 else:
                     local_first = False
-                pi = Pad_info(output_tile_coord, cur_output_shape, padding_info, input_slice, internal_expand, real_index, opname, op_idex, local_idex, next_id, local_first, non_disjoint_tile_size)
+                pi = Pad_info(output_tile_coord, cur_output_shape, padding_info, input_slice, internal_expand, real_index, opname, op_idex, local_idex, next_id, local_first, non_disjoint_tile_size, [nTh, nTw])
                 fwd_info_dict[uniq_opid] = pi  # insert into info_dict
                 next_id = uniq_opid
             elif isinstance(op, maxpool2d.cMaxPool2d):
@@ -212,7 +213,7 @@ def compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg, shape_dict, 
                 real_index[1] = min(W-1, real_index[1] +1) # +1 since 0-based 
                 real_index[3] = min(H-1, real_index[3] +1)
                 input_slice = real_index    # maxpooling no padding here.
-                pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, non_disjoint_tile_size)
+                pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, non_disjoint_tile_size, [nTh, nTw])
                 fwd_info_dict[uniq_opid] = pi # insert into info_dict
                 next_id = uniq_opid
             else:
@@ -244,7 +245,7 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
                 input_slice = [tile_left, tile_right, tile_top, tile_bottom]
                 real_index = input_slice
                 opname = "fake-bp"
-                pi = Pad_info(output_tile_coord, [Th, Tw], (), input_slice, (), real_index, opname, -11, -11, -11, False, [])
+                pi = Pad_info(output_tile_coord, [Th, Tw], (), input_slice, (), real_index, opname, -11, -11, -11, False, [], [nTh, nTw])
                 bwd_info_dict[-11] = pi
             
             if isinstance(op, conv2d.TiledConv2d):
@@ -262,7 +263,7 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
                 padding_info, input_slice, internal_expand, real_index = conv2d_revr_padding_info(real_index, none_tiled_input_shape, [ph, pw], op.stride[0], op.kernel_size[0])
                 cur_output_shape = (input_slice[1]-input_slice[0]+1, input_slice[3]-input_slice[2]+1) # r-l, b-t
                 opname = "bk-conv2d"+str(id(op))
-                pi = Pad_info(output_tile_coord, cur_output_shape, padding_info, input_slice, internal_expand, real_index, opname, op_idex, local_idex, next_id, False, [])
+                pi = Pad_info(output_tile_coord, cur_output_shape, padding_info, input_slice, internal_expand, real_index, opname, op_idex, local_idex, next_id, False, [], [nTh, nTw])
                 bwd_info_dict[uniq_id] = pi  # insert into info_dict
                 next_id = uniq_id
             elif isinstance(op, maxpool2d.cMaxPool2d):
@@ -278,7 +279,7 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
                 real_index[1] = min(W-1, real_index[1])
                 real_index[3] = min(H-1, real_index[3])
                 input_slice = real_index    # maxpooling no padding here.
-                pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, [])
+                pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, [], [nTh, nTw])
                 bwd_info_dict[id(op)] = pi # insert into info_dict
                 next_id = uniq_id
             else:
