@@ -7,17 +7,8 @@ from torch.autograd.variable import Variable
 import math
 import pdb
 from uu.utils import correctness_check 
+from uu.utils.context_control import maxpool_2d_ctx
 
-
-class MMctx:
-    def __init__(self):
-        self.input = None
-        self.kernel_size = None
-        self.padding = None
-        self.stride = None
-        self.uniq_id = None
-        self.info = None
-        self.arg_max = None
 
 myctx_dict = {}
 
@@ -40,7 +31,7 @@ class cMaxPool2dFunction(torch.autograd.Function):
             # del myctx
             # myctx = MMctx()
         else:
-            myctx = MMctx()
+            myctx = maxpool_2d_ctx()
 
         if not is_ccheckpoint:
             out = F.max_pool2d(input, kernel_size, stride, padding, return_indices=True)

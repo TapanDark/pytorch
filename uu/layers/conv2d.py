@@ -11,25 +11,11 @@ from uu.utils import padding_calc
 from torch.nn.parameter import Parameter
 
 from uu.utils import memory 
+from uu.utils.context_control import conv_2d_ctx
 import time
 
-class MMctx:
-    def __init__(self):
-        self.input = None
-        self.weight = None
-        self.padding = None
-        self.stride = None
-        self.groups = None
-        self.uniq_id = None
-        self.info = None
-        self.coord = None
-        self.input_real_size = None
-    def __repr__(self) -> str:
-        rep = "[[ " + str(self.uniq_id) +"[" +' PI( <' + "".join([str(x)+"," for x in self.coord]) + '>,\n'
-        return rep
 
 myctx_dict = {}
-
 class TiledConv2dFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, bias, stride,
@@ -42,7 +28,7 @@ class TiledConv2dFunction(torch.autograd.Function):
             # del myctx
             # myctx = MMctx()
         else:
-            myctx = MMctx()
+            myctx = conv_2d_ctx()
 
         c_info = info[0][uniq_id]   
         # print("current fwd info", c_info)

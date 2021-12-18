@@ -6,18 +6,9 @@ from torch.nn.common_types import _size_2_t
 from uu.utils import correctness_check 
 
 
-class MMctx:
-    def __init__(self):
-        self.input = None
-        self.kernel_size = None
-        self.padding = None
-        self.stride = None
-        self.uniq_id = None
-        self.info = None
-        self.arg_max = None
+
 
 myctx_dict = {}
-
 partial_sums_tile = []
 
 class cGAvgPool2dFunction(torch.autograd.Function):
@@ -143,6 +134,7 @@ class cGAvgPool2d(_AvgPoolNd):
 
         cgavgplool = cGAvgPool2dFunction.apply
         uniq_id = id(self)
+        # info[0] is the forward meta info
         pi = info[0][uniq_id]
 
 

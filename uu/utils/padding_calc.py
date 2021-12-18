@@ -1,116 +1,12 @@
 import torch
 from typing import Dict, List
 from torch.autograd.variable import Variable
-from uu.layers import maxpool2d, conv2d, tilesplit, relu
+from uu.layers import maxpool2d, conv2d, tilesplit, relu, gavgpool2d, gmaxpool2d
 import math
 
 from uu.utils import correctness_check
+from uu.utils.meta_info import Pad_info
 
-# Assume conv2d input output are same shape
-def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: List, stride, RS):
-    #print("--", tile_indx, none_tiled_output_shape, pads, stride, RS)
-    #pdb.set_trace()
-    oH = none_tiled_output_shape[2]
-    oW = none_tiled_output_shape[3]
-    iH = (oH-1)*stride+RS-2*pads[0]
-    iW = iH     #only consider square
-    # output view
-
-    tile_top = tile_indx[2]
-    tile_bottom = tile_indx[3]
-    tile_left = tile_indx[0]
-    tile_right = tile_indx[1]
-    #print("index", tile_left, tile_right, tile_top, tile_bottom)
-
-    #here we only consider stride = 1
-    pad_top = max(0-(tile_top-pads[0]), 0)
-    pad_bottom = max((tile_bottom+pads[0])-(iH-1), 0)
-    pad_left = max(0-(tile_left-pads[1]), 0)
-    pad_right = max((tile_right+pads[1])-(iW-1), 0)
-    # padding 0 element
-    padding_info = [pad_left, pad_right, pad_top, pad_bottom]
-    #print(padding_info)
-
-    # TODO: is it general??
-    iexp_top = pads[0] if (tile_top-pads[0])>=0 else 0
-    iexp_bottom = pads[0] if (tile_bottom+pads[0])<=(iH-1) else 0
-    iexp_left = pads[1] if (tile_left-pads[1]) >= 0 else 0
-    iexp_right = pads[1] if (tile_right+pads[1])<=(iW-1) else 0
-    internal_expand = [iexp_left, iexp_right, iexp_top, iexp_bottom]
-
-    input_top = max(0, (tile_top-pads[0]))
-    input_bottom = min(iH-1, (tile_bottom+pads[0]))
-    input_left = max(0, (tile_left-pads[1]))
-    input_right = min(iW-1, (tile_right+pads[1]))
-    #input_tile view, the 4 point(l,r,t,b) in input tenser. Value is include [l, r], [t, b]
-    input_slice = [input_left, input_right, input_top, input_bottom]
-
-    # left , right, top, bottom; the naming is misleading; it means the relative index of current input view in its parent's view.
-    # real index can have negative value and larger than iH,iW value, since it shows info one level up. 
-    real_index = [(tile_left-pads[1]), (tile_right+pads[1]), (tile_top-pads[0]), (tile_bottom+pads[0])]
-    # print("--tile_indx", tile_indx)
-    # print("--input_slice", input_slice)
-    # print("--real_index", real_index)
-    return padding_info, input_slice, internal_expand, real_index
-
-
-# might need to create a memo structure. 
-class Pad_info:
-    def __init__(self, coord, cur_output_shape, padding_info, input_slice, internal_expand, real_index, opname, \
-        op_idex, local_idex, next_id, local_first, non_disjoint_tile_size, numof_tiles):
-        self.coord = coord
-        # self.ordering_info = ordering_info # [seg_id, position(0 base), depth(0 base)]
-        self.cur_output_shape = cur_output_shape 
-        self.padding_info = padding_info
-        self.input_slice = input_slice
-        self.internal_expand = internal_expand
-        self.real_index = real_index
-        self.opname = opname
-        self.op_idex = op_idex
-        self.local_idex = local_idex
-        self.next_id = next_id
-        self.local_first = local_first
-        self.non_disjoint_tile_size = non_disjoint_tile_size
-        self.numof_tiles = numof_tiles #[Nth, Ntw]
-        
-    # def copy(self): 
-    #     return type(self)(self.coord, self.cur_output_shape, self.padding_info, \
-    #         self.input_slice, self.internal_expand, self.real_index, self.opname, self.op_idex, self.local_idex, self.next_id)
-
-    def __repr__(self) -> str:
-        rep = self.opname +"[" +str(self.op_idex)+","+str(self.local_idex) + "]" +' PI( <' + "".join([str(x)+"," for x in self.coord]) + '>,\n <otileshape ' + \
-                    "".join([str(x)+"," for x in self.cur_output_shape]) + '>,\n <padding ' + \
-                    "".join([str(x)+"," for x in self.padding_info]) + '>,\n <inpslidx ' + \
-                    "".join([str(x)+"," for x in self.input_slice]) + '>, \n <internal ' + \
-                    "".join([str(x)+"," for x in self.internal_expand]) + '>, \n <realidx ' + \
-                    "".join([str(x)+"," for x in self.real_index]) + '>, \n <ndtsize ' + \
-                    "".join([str(x)+"," for x in self.non_disjoint_tile_size]) + '>, \n ' + \
-                        " local_first " + str(self.local_first) +'\n' + \
-                        " next_id " + str(self.next_id) + ")\n  numof tiles " + "".join([str(x)+"," for x in self.numof_tiles]) + "\n"
-        return rep
-
-
-
-
-def shape_compatible(fwd_out_shape, bwd_out_shape):
-    if fwd_out_shape[0] >= bwd_out_shape[0] and fwd_out_shape[1] >= bwd_out_shape[1]:
-        return True
-    else:
-        return False
-
-
-def peek_position(stream_structure, op_idex):
-    num_conv_in_seg = 0
-    # uniq_id_array = []
-    while op_idex < len(stream_structure):
-        op = stream_structure[op_idex]
-        if isinstance(op, conv2d.TiledConv2d):
-            num_conv_in_seg += 1
-            # uniq_id_array.append[id(op)]
-        else:
-            break
-        op_idex += 1
-    return num_conv_in_seg
 
 def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, nTw, stream_structure, shape_dict) -> Dict:
     list_op__in_chckp_seg = []
@@ -141,7 +37,7 @@ def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, n
 
     assert len(f_info) != 0 and len(b_info) != 0
     info = [f_info, b_info]
-   
+    # return both fwd and bkw meta info
     return info
 
 
@@ -216,6 +112,14 @@ def compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg, shape_dict, 
                 pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, non_disjoint_tile_size, [nTh, nTw])
                 fwd_info_dict[uniq_opid] = pi # insert into info_dict
                 next_id = uniq_opid
+            elif isinstance(op, gavgpool2d.cGAvgPool2d) or isinstance(op, gmaxpool2d.cGMaxPool2d):
+                opname = "gloablpool2d"+str(uniq_opid)
+                cur_output_shape=[1,1]
+                pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, non_disjoint_tile_size, [nTh, nTw])
+                fwd_info_dict[uniq_opid] = pi # insert into info_dict
+                next_id = uniq_opid
+
+
             else:
                 None
             op_idex += 1
@@ -282,6 +186,13 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
                 pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, [], [nTh, nTw])
                 bwd_info_dict[id(op)] = pi # insert into info_dict
                 next_id = uniq_id
+            elif isinstance(op, gavgpool2d.cGAvgPool2d) or isinstance(op, gmaxpool2d.cGMaxPool2d):
+                opname = "bk-gloablpool2d"+str(id(op))
+                cur_output_shape=[1,1]
+                pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, [], [nTh, nTw])
+                bwd_info_dict[id(op)] = pi # insert into info_dict
+                next_id = uniq_id
+
             else:
                 None
             op_idex += 1
@@ -540,20 +451,73 @@ def recreate_input_tile_f(info:Dict, input, next_id):
 
 
 
-# def recreate_input_tile_f(info:Dict, input, next_id):
-#     pi = info[0][next_id]
-#     padding_info = pi.padding_info
-#     if padding_info != [0] * len(padding_info):
-#         input_shape = input.size()
-#         top_bound = 0
-#         bottom_bound = input_shape[2]
-#         left_bound = 0
-#         right_bound = input_shape[3]
+# Assume conv2d input output are same shape
+def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: List, stride, RS):
+    #print("--", tile_indx, none_tiled_output_shape, pads, stride, RS)
+    #pdb.set_trace()
+    oH = none_tiled_output_shape[2]
+    oW = none_tiled_output_shape[3]
+    iH = (oH-1)*stride+RS-2*pads[0]
+    iW = iH     #only consider square
+    # output view
 
-#         top = 0 + padding_info[2]
-#         bottom = input_shape[2]-padding_info[3]
-#         left = 0 + padding_info[0]
-#         right = input_shape[3]-padding_info[1] 
+    tile_top = tile_indx[2]
+    tile_bottom = tile_indx[3]
+    tile_left = tile_indx[0]
+    tile_right = tile_indx[1]
+    #print("index", tile_left, tile_right, tile_top, tile_bottom)
 
-#     else:
-#         return input
+    #here we only consider stride = 1
+    pad_top = max(0-(tile_top-pads[0]), 0)
+    pad_bottom = max((tile_bottom+pads[0])-(iH-1), 0)
+    pad_left = max(0-(tile_left-pads[1]), 0)
+    pad_right = max((tile_right+pads[1])-(iW-1), 0)
+    # padding 0 element
+    padding_info = [pad_left, pad_right, pad_top, pad_bottom]
+    #print(padding_info)
+
+    # TODO: is it general??
+    iexp_top = pads[0] if (tile_top-pads[0])>=0 else 0
+    iexp_bottom = pads[0] if (tile_bottom+pads[0])<=(iH-1) else 0
+    iexp_left = pads[1] if (tile_left-pads[1]) >= 0 else 0
+    iexp_right = pads[1] if (tile_right+pads[1])<=(iW-1) else 0
+    internal_expand = [iexp_left, iexp_right, iexp_top, iexp_bottom]
+
+    input_top = max(0, (tile_top-pads[0]))
+    input_bottom = min(iH-1, (tile_bottom+pads[0]))
+    input_left = max(0, (tile_left-pads[1]))
+    input_right = min(iW-1, (tile_right+pads[1]))
+    #input_tile view, the 4 point(l,r,t,b) in input tenser. Value is include [l, r], [t, b]
+    input_slice = [input_left, input_right, input_top, input_bottom]
+
+    # left , right, top, bottom; the naming is misleading; it means the relative index of current input view in its parent's view.
+    # real index can have negative value and larger than iH,iW value, since it shows info one level up. 
+    real_index = [(tile_left-pads[1]), (tile_right+pads[1]), (tile_top-pads[0]), (tile_bottom+pads[0])]
+    # print("--tile_indx", tile_indx)
+    # print("--input_slice", input_slice)
+    # print("--real_index", real_index)
+    return padding_info, input_slice, internal_expand, real_index
+
+
+
+
+
+def shape_compatible(fwd_out_shape, bwd_out_shape):
+    if fwd_out_shape[0] >= bwd_out_shape[0] and fwd_out_shape[1] >= bwd_out_shape[1]:
+        return True
+    else:
+        return False
+
+
+def peek_position(stream_structure, op_idex):
+    num_conv_in_seg = 0
+    # uniq_id_array = []
+    while op_idex < len(stream_structure):
+        op = stream_structure[op_idex]
+        if isinstance(op, conv2d.TiledConv2d):
+            num_conv_in_seg += 1
+            # uniq_id_array.append[id(op)]
+        else:
+            break
+        op_idex += 1
+    return num_conv_in_seg
