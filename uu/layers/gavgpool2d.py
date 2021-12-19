@@ -15,26 +15,28 @@ class cGAvgPool2dFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, *inputs):
         
-        #print("\n^^^^^cMaxPool2dFunction fwd")
+        print("\n^^^^^cGavgPool2dFunction fwd")
         input = inputs[0]   # tiled input Do we need to get disjoint part??
         cinfo = inputs[1]   # current info
         ctx.info = cinfo
         uniq_id = inputs[2]
         is_ccheckpoint = inputs[3]
+        f_info = cinfo[0][uniq_id]
+        b_info = cinfo[1][uniq_id]
 
         if USE_DEFAULT_CTX:
 
-            print(cinfo.coord)
-            print(cinfo.numof_tiles)
+            print(f_info.coord)
+            print(f_info.numof_tiles)
 
-            coord_h = cinfo.coord[0]
-            coord_w = cinfo.coord[1]
-            nTh = cinfo.numof_tiles[0]
-            nTw = cinfo.numof_tiles[1]
+            coord_h = f_info.coord[0]
+            coord_w = f_info.coord[1]
+            nTh = f_info.numof_tiles[0]
+            nTw = f_info.numof_tiles[1]
 
             # have to find the info from previous op
-            non_disjoint_tile_size_h = cinfo.non_disjoint_tile_size[0]
-            non_disjoint_tile_size_w = cinfo.non_disjoint_tile_size[1]
+            non_disjoint_tile_size_h = f_info.non_disjoint_tile_size[0]
+            non_disjoint_tile_size_w = f_info.non_disjoint_tile_size[1]
             
 
             # sum all tile piece elements:
@@ -81,13 +83,11 @@ class cGAvgPool2dFunction(torch.autograd.Function):
 
 
 class cGAvgPool2d(_AvgPoolNd):
-    def __init__(self, kernel_size: _size_2_t, stride: _size_2_t = None,
+    def __init__(self, kernel_size: _size_2_t = None, stride: _size_2_t = None,
                  padding: _size_2_t = (0,0), dilation: _size_2_t = 1,
                  return_indices: bool = False, ceil_mode: bool = False,
-                 is_ccheckpoint = False, #mdepth = 1, num_maxp = 1
-                 ):
-        super(cGAvgPool2d, self).__init__(kernel_size, stride,
-                 padding, dilation, return_indices, ceil_mode)
+                 is_ccheckpoint = False):
+        super(cGAvgPool2d, self).__init__()
         self.is_ccheckpoint = is_ccheckpoint
 
     def forward(self, *inputs):

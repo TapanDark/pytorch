@@ -115,6 +115,7 @@ def compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg, shape_dict, 
             elif isinstance(op, gavgpool2d.cGAvgPool2d) or isinstance(op, gmaxpool2d.cGMaxPool2d):
                 opname = "gloablpool2d"+str(uniq_opid)
                 cur_output_shape=[1,1]
+                non_disjoint_tile_size = []
                 pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, non_disjoint_tile_size, [nTh, nTw])
                 fwd_info_dict[uniq_opid] = pi # insert into info_dict
                 next_id = uniq_opid
@@ -189,6 +190,7 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
             elif isinstance(op, gavgpool2d.cGAvgPool2d) or isinstance(op, gmaxpool2d.cGMaxPool2d):
                 opname = "bk-gloablpool2d"+str(id(op))
                 cur_output_shape=[1,1]
+                non_disjoint_tile_size = []
                 pi = Pad_info(output_tile_coord, cur_output_shape, (), input_slice, (), real_index, opname, op_idex, -1, next_id, False, [], [nTh, nTw])
                 bwd_info_dict[id(op)] = pi # insert into info_dict
                 next_id = uniq_id
