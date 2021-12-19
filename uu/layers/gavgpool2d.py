@@ -6,8 +6,7 @@ from torch.nn.common_types import _size_2_t
 from uu.utils import correctness_check 
 
 
-
-
+USE_DEFAULT_CTX = True
 myctx_dict = {}
 partial_sums_tile = []
 
@@ -15,94 +14,68 @@ class cGAvgPool2dFunction(torch.autograd.Function):
     # create a static variable
     @staticmethod
     def forward(ctx, *inputs):
+        
         #print("\n^^^^^cMaxPool2dFunction fwd")
-        input = inputs[0]   # tiled input Do we need to get dijoint part??
-        kernel_size = inputs[1]
-        stride = inputs[2]
-        padding = inputs[3]
-        cinfo = inputs[4] # current info
+        input = inputs[0]   # tiled input Do we need to get disjoint part??
+        cinfo = inputs[1]   # current info
         ctx.info = cinfo
-        uniq_id = inputs[5]
-        is_ccheckpoint = inputs[6]
+        uniq_id = inputs[2]
+        is_ccheckpoint = inputs[3]
 
-        print(cinfo.coord)
-        print(cinfo.numof_tiles)
+        if USE_DEFAULT_CTX:
 
+            print(cinfo.coord)
+            print(cinfo.numof_tiles)
 
-        coord_h = cinfo.coord[0]
-        coord_w = cinfo.coord[1]
-        nTh = cinfo.numof_tiles[0]
-        nTw = cinfo.numof_tiles[1]
+            coord_h = cinfo.coord[0]
+            coord_w = cinfo.coord[1]
+            nTh = cinfo.numof_tiles[0]
+            nTw = cinfo.numof_tiles[1]
 
-        # have to find the info from previous op
-        non_disjoint_tile_size_h = cinfo.non_disjoint_tile_size[0]
-        non_disjoint_tile_size_w = cinfo.non_disjoint_tile_size[1]
-        
-
-        # sum all tile piece elements:
-        dim_tp = (len(input.size())-2, len(input.size())-1)
-        current_sum_overhw = input.sum(dim=dim_tp)
-        partial_sums_tile.append(current_sum_overhw)
-
-        if coord_h == nTh-1 and coord_w == nTw-1:
-            # get all tiles partial sum
-            assert(len(partial_sums_tile) == nTh*nTw)
-            accum = partial_sums_tile[0]
-            # accumlate all partial sum
-            for i in range(1, len(partial_sums_tile)):
-                accum += partial_sums_tile[i]
+            # have to find the info from previous op
+            non_disjoint_tile_size_h = cinfo.non_disjoint_tile_size[0]
+            non_disjoint_tile_size_w = cinfo.non_disjoint_tile_size[1]
             
-            # averaging 
-            # non-tiled input shape of avgpool
-            input_size = [non_disjoint_tile_size_h*nTh, non_disjoint_tile_size_w*nTw]
-            num_of_element = non_disjoint_tile_size_h*nTh * non_disjoint_tile_size_w*nTw
-            out_value = accum / num_of_element 
-            return out_value # tensor
-        else:
-            # none-last tile return None
-            return None
+
+            # sum all tile piece elements:
+            dim_tp = (len(input.size())-2, len(input.size())-1)
+            current_sum_overhw = input.sum(dim=dim_tp)
+            partial_sums_tile.append(current_sum_overhw)
+
+            if coord_h == nTh-1 and coord_w == nTw-1:
+                # get all tiles partial sum
+                assert(len(partial_sums_tile) == nTh*nTw)
+                accum = partial_sums_tile[0]
+                # accumlate all partial sum
+                for i in range(1, len(partial_sums_tile)):
+                    accum += partial_sums_tile[i]
+                
+                # averaging 
+                # non-tiled input shape of avgpool
+                input_size = [non_disjoint_tile_size_h*nTh, non_disjoint_tile_size_w*nTw]
+                num_of_element = non_disjoint_tile_size_h*nTh * non_disjoint_tile_size_w*nTw
+                out_value = accum / num_of_element 
+                return out_value # tensor
+            else:
+                # none-last tile return None
+                return None
 
 
-        
-        
-    
-    # @staticmethod
-    # def backward(ctx, grad_output):
-    #     # print("\n^^^^^cMaxPool2dFunction bwd")
-    #     # #case1
-    #     # if ctx.input.is_cuda:
-    #     #     grad_in = maxpool_2d_bkw_cuda.backward(grad_output, ctx.input, ctx.kernel_size, ctx.stride, ctx.padding, (1,1), False, ctx.arg_max)
-    #     # else:
-    #     #     grad_in = maxpool_2d_bkw_cpp.backward(grad_output, ctx.input, ctx.kernel_size, ctx.stride, ctx.padding, (1,1), False, ctx.arg_max)
-        
-    #     myctx = myctx_dict[ctx.uniq_id]
+    @staticmethod
+    def backward(ctx, grad_output):
+        if USE_DEFAULT_CTX:
+            f_info = ctx.info[0][ctx.uniq_id]
+            b_info = ctx.info[1][ctx.uniq_id]
+            rev_g_depth = f_info.op_idex # must be last in our global seg
+            if rev_g_depth == 0:
+                grad_in = torch.zeros(b, c, h, w)
 
-    #     # print("input size", myctx.input.size())
-    #     # print("grad_out size",grad_output.size())
-    #     #print("grad_out ",grad_output)
-    #     # print("arg size",myctx.arg_max.size())
-
-
-    #     f_info = myctx.info[0][ctx.uniq_id]
-    #     b_info = myctx.info[1][ctx.uniq_id]
-    #     rev_g_depth = f_info.op_idex
-    #     g_depth = b_info.op_idex    # global depth
-    #     if g_depth == 0: 
-    #         grad_in = torch._C._nn.max_pool2d_with_indices_backward(grad_output, myctx.input, myctx.kernel_size, myctx.stride, myctx.padding, (1,1), False, myctx.arg_max)
-    #         # reshape to tile size before leaving the segment
-
-    #     elif rev_g_depth == 0:
-    #         # the last stage in regular order
-    #         new_grad_out = grad_output[:, :, b_info.input_slice[2]:b_info.input_slice[3]+1, b_info.input_slice[0]:b_info.input_slice[1]+1]
-    #         #print("new_grad_out", new_grad_out.size())
-    #         grad_in = torch._C._nn.max_pool2d_with_indices_backward(new_grad_out, myctx.input, myctx.kernel_size, myctx.stride, myctx.padding, (1,1), False, myctx.arg_max)
-    #     else:
-    #         grad_in = torch._C._nn.max_pool2d_with_indices_backward(grad_output, myctx.input, myctx.kernel_size, myctx.stride, myctx.padding, (1,1), False, myctx.arg_max)
-    
-    #     #print("##############grad_in in maxp", grad_in.size()) 
-    #     #print("grad in", grad_in)
-    #     torch.cuda.empty_cache()
-    #     return grad_in, None, None, None, None, None, None
+                print("grad_t1 original", grad_in, grad_in.size())
+                for i in range(0,b):
+                    for j in range (0,c):
+                        grad_in[i,j,:,:] = grad_output[i,j]
+        return grad_in, None, None, None
+       
         
         
 
@@ -137,11 +110,9 @@ class cGAvgPool2d(_AvgPoolNd):
         # info[0] is the forward meta info
         pi = info[0][uniq_id]
 
-
         # Gppoling must be the last op in a checkpoint segment
         assert (pi.op_idex == 0)
-        out = cgavgplool(input, self.kernel_size, self.stride,
-                        self.padding, info, uniq_id, is_ccheckpoint)
+        out = cgavgplool(input, info, uniq_id, is_ccheckpoint)
         #print ("mxp FF", out.size())
         return out
        
