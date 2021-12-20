@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from uu.utils import correctness_check 
 from uu.utils import padding_calc
-from uu.layers import maxpool2d, conv2d, sequential, tilesplit, relu
+from uu.layers import maxpool2d, conv2d, sequential, tilesplit, relu, gavgpool2d, gmaxpool2d
 from torch.nn.parameter import Parameter
 import math
 
@@ -49,6 +49,11 @@ def shape_infer_sequence(seq_ops, inputH, inputW, N, C):
             in_out_shape_info = in_out_shape(input_shape, output_shape)
             shape_dict[id(op)] = in_out_shape_info
             #print("after maxpool2d {}x{}x{}x{}".format(N, C, H, W))
+        elif isinstance(op, gavgpool2d.cGAvgPool2d) or isinstance(op, gmaxpool2d.cGMaxPool2d):
+            input_shape = (N, C, H, W)
+            output_shape = (N, C, 1, 1)
+            in_out_shape_info = in_out_shape(input_shape, output_shape)
+            shape_dict[id(op)] = in_out_shape_info
         else:
             input_shape = (N, C, H, W)
             output_shape = input_shape

@@ -31,14 +31,14 @@ def print_activa(self, input, output):
 class Net_ref(nn.Module):
     def __init__(self, w1, w2):
         super().__init__()
-        self.conv2d_1 = nn.Conv2d(in_channels=3, 
-                                  out_channels=64, 
+        self.conv2d_1 = nn.Conv2d(in_channels=chanel, 
+                                  out_channels=chanel, 
                                   kernel_size=(Kh,Kw),
                                   bias = False,
                                   padding=(Ph,Pw)
                                   )
-        self.conv2d_2 = nn.Conv2d(in_channels=64, 
-                                  out_channels=64, 
+        self.conv2d_2 = nn.Conv2d(in_channels=chanel, 
+                                  out_channels=chanel,
                                   kernel_size=(Kh,Kw),
                                   bias = False,
                                   padding=(Ph,Pw)
@@ -63,26 +63,26 @@ class Net_ref(nn.Module):
 
     def forward(self, x):
         out = self.block1(x)
-        print("out.shape 1 ", out.size())
+        #print("out.shape 1 ", out.size(), out)
         out = self.avgp(out)
-        print("out.shape 2 ", out.size())
-        out = self.sft(out)
-        print("out.shape final", out.size())
+        print("out.shape 2 ", out.size(), out)
+        # out = self.sft(out)
+        # print("out.shape final", out.size(), out)
         return out
 
 
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv2d_1 = conv2d.TiledConv2d(in_channels=3, 
-                                  out_channels=64, 
+        self.conv2d_1 = conv2d.TiledConv2d(in_channels=chanel, 
+                                  out_channels=chanel, 
                                   kernel_size=(Kh,Kw),
                                   bias = False,
                                   padding=(Ph,Pw),
                                   )  
 
-        self.conv2d_2 = conv2d.TiledConv2d(in_channels=64, 
-                                        out_channels=64, 
+        self.conv2d_2 = conv2d.TiledConv2d(in_channels=chanel, 
+                                        out_channels=chanel, 
                                         kernel_size=(Kh,Kw),
                                         bias = False,
                                         padding=(Ph,Pw),
@@ -101,6 +101,7 @@ class Net(nn.Module):
         #nTh, nTw -- num of tiles in H,W
         model_device = next(self.parameters()).device
         N, C, oH, oW, shape_dict = shape_infer.shape_infer_sequence(self.block1, H, W, batch, chanel)
+        
         # print("!!!!!!!", N, C, oH, oW)
         stream_structure = self.block1
 
@@ -113,22 +114,24 @@ class Net(nn.Module):
                 input_shape = (N,C,H,W)
                 output_shape = (N,C,oH,oW)
                 info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
-    
+
                 
                 out_temp = self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
                 print("++++++++++++++++++++++++++++++++++++++++++++++++")
                 print("coord", coord)
-                print("out tile", out_temp.size())
+                # if out_temp is not None:
+                #     print("out tile", out_temp.size(), out_temp)
 
 
-
-        out = self.sft(out_temp)
+        out = out_temp
+        #out = self.sft(out)
+        print("out", out.size(), out)
         return out
 
 
 def main():
     torch.set_printoptions(profile="full")
-    torch.set_default_dtype(torch.float32)
+    torch.set_default_dtype(torch.float64)
 
     # add loss function here
     #criterion = nn.MSELoss()
@@ -144,7 +147,7 @@ def main():
     input_ref = input_ref.cuda()
     input_ref.requires_grad = True
     out_ref = model_ref(input_ref)
-    out_ref.sum().backward()
+    # out_ref.sum().backward()
     
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
@@ -153,8 +156,8 @@ def main():
     #out.sum().backward()
 
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
-    # print("~~ check forward correctness ~~")
-    # correctness_check.check_equal(out, out_ref, False)
+    print("~~ check forward correctness ~~")
+    correctness_check.check_equal(out, out_ref, False)
 
     # print("#### compare w1")
     # correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
@@ -176,10 +179,10 @@ if __name__=="__main__":
 
 
 
-    H = 32
+    H = 64
     W = H
     oH = H//2
     oW = W//2
-    nTh = 2
+    nTh = 4
     nTw = nTh
     main()

@@ -24,12 +24,12 @@ def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, n
     # print("bwd_out_shape ", bwd_out_shape)
     # print("fwd_out_shape ", fwd_out_shape)
     if not shape_compatible(fwd_out_shape, bwd_out_shape):
-        #print("Yes, fwd is smaller")
+        print("Yes, fwd is smaller")
         f_info = compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg.copy(), shape_dict, b_info, nTh, nTw)
     else:
         f_info = compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg.copy(), shape_dict, b_info, nTh, nTw)
 
-    #print("op_list_in_seg", list_op__in_chckp_seg)
+    # print("op_list_in_seg", list_op__in_chckp_seg)
     # print("------------------------------")
     # print("f_info", f_info)
     # print("------------------------------")
@@ -131,6 +131,8 @@ def compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg, shape_dict, 
 
 def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_op__in_chckp_seg, shape_dict) -> Dict:
     bwd_info_dict = {}
+    # !! in the backward info, the cur_output_shape is in fact the input of this op
+
     with torch.no_grad():
         H = input_shape[2]
         W = input_shape[3]
@@ -149,8 +151,8 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
                 tile_right = tile_left+Tw-1
                 input_slice = [tile_left, tile_right, tile_top, tile_bottom]
                 real_index = input_slice
-                opname = "fake-bp"
-                pi = Pad_info(output_tile_coord, [Th, Tw], (), input_slice, (), real_index, opname, -11, -11, -11, False, [], [nTh, nTw])
+                opname = "fake-grad-IN"
+                pi = Pad_info(output_tile_coord, [Th, Tw], (), input_slice, (), real_index, opname, -11, -11, -101, False, [], [nTh, nTw])
                 bwd_info_dict[-11] = pi
             
             if isinstance(op, conv2d.TiledConv2d):

@@ -46,7 +46,7 @@ class Pad_info:
     #         self.input_slice, self.internal_expand, self.real_index, self.opname, self.op_idex, self.local_idex, self.next_id)
 
     def __repr__(self) -> str:
-        rep = self.opname +"[" +str(self.op_idex)+","+str(self.local_idex) + "]" +' PI( <' + "".join([str(x)+"," for x in self.coord]) + '>,\n <otileshape ' + \
+        rep = self.opname +"[" +str(self.op_idex)+","+str(self.local_idex) + "]" +'\n PI( <' + "".join([str(x)+"," for x in self.coord]) + '>,\n <otileshape ' + \
                     "".join([str(x)+"," for x in self.cur_output_shape]) + '>,\n <padding ' + \
                     "".join([str(x)+"," for x in self.padding_info]) + '>,\n <inpslidx ' + \
                     "".join([str(x)+"," for x in self.input_slice]) + '>, \n <internal ' + \
@@ -54,7 +54,7 @@ class Pad_info:
                     "".join([str(x)+"," for x in self.real_index]) + '>, \n <ndtsize ' + \
                     "".join([str(x)+"," for x in self.non_disjoint_tile_size]) + '>, \n ' + \
                         " local_first " + str(self.local_first) +'\n' + \
-                        " next_id " + str(self.next_id) + ")\n  numof tiles " + "".join([str(x)+"," for x in self.numof_tiles]) + "\n"
+                        " next_id " + str(self.next_id) + "\n numof tiles " + "".join([str(x)+"," for x in self.numof_tiles]) + " ) \n"
         return rep
 
 # 
