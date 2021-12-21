@@ -51,7 +51,9 @@ def shape_infer_sequence(seq_ops, inputH, inputW, N, C):
             #print("after maxpool2d {}x{}x{}x{}".format(N, C, H, W))
         elif isinstance(op, gavgpool2d.cGAvgPool2d) or isinstance(op, gmaxpool2d.cGMaxPool2d):
             input_shape = (N, C, H, W)
-            output_shape = (N, C, 1, 1)
+            H = 1
+            W = 1
+            output_shape = (N, C, H, W)
             in_out_shape_info = in_out_shape(input_shape, output_shape)
             shape_dict[id(op)] = in_out_shape_info
         else:

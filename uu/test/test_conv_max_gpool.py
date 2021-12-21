@@ -15,10 +15,10 @@ li_act = []
 grad_dict_bk = {}
 def print_grad(self, grad_input, grad_output):
     print('Inside '+ self.__class__.__name__+ ' backward')
-#     print('grad_output size : ', grad_output[0].size())
-#     #print('ref grad_output  :\n ', grad_output[0])
-#     print('grad_input size : ', grad_input[0].size())
-#    # print('ref grad_input  : \n', grad_input[0])
+    print('grad_output size : ', grad_output[0].size())
+    print('ref grad_output  :\n ', grad_output[0])
+    print('grad_input size : ', grad_input[0].size())
+    print('ref grad_input  : \n', grad_input[0])
     #li.append( grad_output[0])
 
 def print_activa(self, input, output):
@@ -57,6 +57,7 @@ class Net_ref(nn.Module):
         self.conv2d_1.register_full_backward_hook(print_grad)
         self.conv2d_2.register_full_backward_hook(print_grad)
         self.maxpool1.register_full_backward_hook(print_grad)
+        self.avgp.register_full_backward_hook(print_grad)
 
 
         self.block1 = nn.Sequential(*[self.conv2d_1, self.conv2d_2, self.maxpool1,]) 
@@ -102,7 +103,7 @@ class Net(nn.Module):
         model_device = next(self.parameters()).device
         N, C, oH, oW, shape_dict = shape_infer.shape_infer_sequence(self.block1, H, W, batch, chanel)
         
-        # print("!!!!!!!", N, C, oH, oW)
+        print("!!!!!!!", N, C, oH, oW)
         stream_structure = self.block1
 
         out = torch.zeros(N, C, oH, oW, requires_grad=True).cuda()
@@ -110,20 +111,20 @@ class Net(nn.Module):
         for i in range(0,nTh): 
             for j in range(0,nTw):
                 coord = [i,j]
-                
+                print("++++++++++++++++++++++++++++++++++++++++++++++++")
+                print("coord", coord)
                 input_shape = (N,C,H,W)
                 output_shape = (N,C,oH,oW)
                 info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
 
                 
-                out_temp = self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
-                print("++++++++++++++++++++++++++++++++++++++++++++++++")
-                print("coord", coord)
+                out += self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
+                
                 # if out_temp is not None:
                 #     print("out tile", out_temp.size(), out_temp)
 
 
-        out = out_temp
+        #out = out_temp
         #out = self.sft(out)
         print("out", out.size(), out)
         return out
@@ -147,23 +148,23 @@ def main():
     input_ref = input_ref.cuda()
     input_ref.requires_grad = True
     out_ref = model_ref(input_ref)
-    # out_ref.sum().backward()
+    out_ref.sum().backward()
     
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
 
     out = model(input, H, W, nTh, nTw )
-    #out.sum().backward()
+    out.sum().backward()
 
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
     print("~~ check forward correctness ~~")
     correctness_check.check_equal(out, out_ref, False)
 
-    # print("#### compare w1")
-    # correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
+    print("#### compare w1")
+    correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
 
-    # print("#### compare w2")
-    # correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
+    print("#### compare w2")
+    correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
 
 
 
@@ -183,6 +184,6 @@ if __name__=="__main__":
     W = H
     oH = H//2
     oW = W//2
-    nTh = 4
+    nTh = 2
     nTw = nTh
     main()

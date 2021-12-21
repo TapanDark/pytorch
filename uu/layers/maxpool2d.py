@@ -94,6 +94,12 @@ class cMaxPool2dFunction(torch.autograd.Function):
                 grad_in = torch._C._nn.max_pool2d_with_indices_backward(new_grad_out, ctx.input, ctx.kernel_size, ctx.stride, ctx.padding, (1,1), False, ctx.arg_max)
             else:
                 grad_in = torch._C._nn.max_pool2d_with_indices_backward(grad_output, ctx.input, ctx.kernel_size, ctx.stride, ctx.padding, (1,1), False, ctx.arg_max)
+            
+            print("grad_out size",grad_output.size())
+            print("grad_out ",grad_output)
+            print("##############grad_in in maxp", grad_in.size()) 
+            print("grad in", grad_in)
+            
             return grad_in, None, None, None, None, None, None
         else:
             # print("\n^^^^^cMaxPool2dFunction bwd")
@@ -125,8 +131,8 @@ class cMaxPool2dFunction(torch.autograd.Function):
             else:
                 grad_in = torch._C._nn.max_pool2d_with_indices_backward(grad_output, myctx.input, myctx.kernel_size, myctx.stride, myctx.padding, (1,1), False, myctx.arg_max)
         
-            #print("##############grad_in in maxp", grad_in.size()) 
-            #print("grad in", grad_in)
+            # print("##############grad_in in maxp", grad_in.size()) 
+            # print("grad in", grad_in)
             torch.cuda.empty_cache()
             return grad_in, None, None, None, None, None, None
         

@@ -24,16 +24,18 @@ class cGAvgPool2dFunction(torch.autograd.Function):
         b_info = info[1][uniq_id]
 
 
-        b = input.size()[0]
-        c = input.size()[1]
-        h = input.size()[2]
-        w = input.size()[3]
-        ctx.b = b
-        ctx.c = c
-        ctx.h = h
-        ctx.w = w
+        
 
         if USE_DEFAULT_CTX:
+            ctx.uniq_id = uniq_id
+            b = input.size()[0]
+            c = input.size()[1]
+            h = input.size()[2]
+            w = input.size()[3]
+            ctx.b = b
+            ctx.c = c
+            ctx.h = h
+            ctx.w = w
             coord_h = f_info.coord[0]
             coord_w = f_info.coord[1]
             nTh = f_info.numof_tiles[0]
@@ -49,7 +51,7 @@ class cGAvgPool2dFunction(torch.autograd.Function):
 
             #print("previous f_info", pre_f_info)
             
-            #print("input ", input, input.size())
+            print("input ", input.size())
             # sum all tile piece elements:
             dim_tp = (len(input.size())-2, len(input.size())-1)
             # extract non-disjoint
@@ -92,18 +94,27 @@ class cGAvgPool2dFunction(torch.autograd.Function):
                 # averaging 
                 # non-tiled input shape of avgpool
                 num_of_element = non_disjoint_tile_size_h*nTh * non_disjoint_tile_size_w*nTw
+                #?????
+                ctx.num_of_element = num_of_element
                 accum = accum[:, :, None,None]
                 # print("accum", accum)
                 # print("num_of_element", num_of_element)
                 out_value = accum / num_of_element 
+                print("out_value size", out_value.size())
                 return out_value # tensor
             else:
                 # none-last tile return None
-                return None
+                num_of_element = non_disjoint_tile_size_h*nTh * non_disjoint_tile_size_w*nTw
+                ctx.num_of_element = num_of_element
+                fake_out = torch.zeros(partial_sums_tile[0].size(), requires_grad=True).cuda()
+                fake_out = fake_out[:, :, None,None]
+                print("fake size", fake_out.size())
+                return fake_out
 
 
     @staticmethod
     def backward(ctx, grad_output):
+        print("^^^^^cGavgPool2dFunction bkw")
         if USE_DEFAULT_CTX:
             f_info = ctx.info[0][ctx.uniq_id]
             b_info = ctx.info[1][ctx.uniq_id]
@@ -114,12 +125,16 @@ class cGAvgPool2dFunction(torch.autograd.Function):
 
             rev_g_depth = f_info.op_idex # must be last in our global seg
             if rev_g_depth == 0:
-                grad_in = torch.zeros(b, c, h, w)
+                grad_in = torch.zeros(b, c, h, w).cuda()
 
-                print("grad_t1 original", grad_in, grad_in.size())
+                print("grad_t1 original", grad_in.size())
                 for i in range(0,b):
                     for j in range (0,c):
-                        grad_in[i,j,:,:] = grad_output[i,j]
+                        grad_in[i,j,:,:] = grad_output[i,j]/ctx.num_of_element
+            
+            
+            print("grad_output", grad_output)
+            print("grad_t1 original", grad_in)
         return grad_in, None, None, None
        
         
