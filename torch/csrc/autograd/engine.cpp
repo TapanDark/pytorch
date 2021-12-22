@@ -684,8 +684,8 @@ void validate_outputs(
       continue;
     }
     // Yufan: Not sure how to trick pytorch to stop checking shape
-    if (false && !grad.sizes().equals(metadata.shape())) {
-      if (!at::is_expandable_to(metadata.shape(), grad.sizes())) {
+    if (!grad.sizes().equals(metadata.shape())) {
+      if (false && !at::is_expandable_to(metadata.shape(), grad.sizes())) {
         std::stringstream ss;
         ss << "invalid gradient at index " << i << " - got ";
         ss << grad.sizes() << " but expected shape compatible with ";
