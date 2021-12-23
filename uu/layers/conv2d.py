@@ -425,7 +425,8 @@ class TiledConv2dFunction(torch.autograd.Function):
                         temp_b = torch.sum(new_grad_output, (0,2,3))
                         if ctx.needs_input_grad[2]:
                             grad_bias = temp_b
-                            print(grad_bias)
+                            # temp_b[0] = -100
+                            #print("grad_bias", grad_bias)
                         else:
                             grad_bias = None
                     else:

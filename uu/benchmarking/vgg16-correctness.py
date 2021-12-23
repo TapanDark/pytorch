@@ -42,18 +42,19 @@ nTh = 1
 nTw = 1
 
 class Net_ref(nn.Module):
-    def __init__(self, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, fcw1, fcw2):
+    def __init__(self, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, fcw1, fcw2
+    , b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13):
         super().__init__()
         self.conv2d_1 = nn.Conv2d(in_channels=3, 
                                   out_channels=64, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         self.conv2d_2 = nn.Conv2d(in_channels=64, 
                                   out_channels=64, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         
@@ -62,32 +63,32 @@ class Net_ref(nn.Module):
         self.conv2d_3 = nn.Conv2d(in_channels=64, 
                                   out_channels=128, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         self.conv2d_4 = nn.Conv2d(in_channels=128, 
                                   out_channels=128, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         self.maxpool2 = nn.MaxPool2d((2,2), (2,2))                          
         self.conv2d_5 = nn.Conv2d(in_channels=128, 
                                   out_channels=256, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         self.conv2d_6 = nn.Conv2d(in_channels=256, 
                                   out_channels=256, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         self.conv2d_7 = nn.Conv2d(in_channels=256, 
                                   out_channels=256, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         
@@ -97,19 +98,19 @@ class Net_ref(nn.Module):
         self.conv2d_8 = nn.Conv2d(in_channels=256, 
                                   out_channels=512, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         self.conv2d_9 = nn.Conv2d(in_channels=512, 
                                   out_channels=512, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         self.conv2d_10 = nn.Conv2d(in_channels=512, 
                                   out_channels=512, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
 
@@ -118,19 +119,19 @@ class Net_ref(nn.Module):
         self.conv2d_11 = nn.Conv2d(in_channels=512, 
                                   out_channels=512, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         self.conv2d_12 = nn.Conv2d(in_channels=512, 
                                   out_channels=512, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
         self.conv2d_13 = nn.Conv2d(in_channels=512, 
                                   out_channels=512, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw)
                                   )
 
@@ -165,6 +166,22 @@ class Net_ref(nn.Module):
         self.conv2d_11.weight = Parameter(w11)
         self.conv2d_12.weight = Parameter(w12)
         self.conv2d_13.weight = Parameter(w13)
+        self.conv2d_1.bias = Parameter(b1)
+        self.conv2d_2.bias = Parameter(b2)
+        self.conv2d_3.bias = Parameter(b3)
+        self.conv2d_4.bias = Parameter(b4)
+        self.conv2d_5.bias = Parameter(b5)
+        self.conv2d_6.bias = Parameter(b6)
+        self.conv2d_7.bias = Parameter(b7)
+        self.conv2d_8.bias = Parameter(b8)
+        self.conv2d_9.bias = Parameter(b9)
+        self.conv2d_10.bias = Parameter(b10)
+        self.conv2d_11.bias = Parameter(b11)
+        self.conv2d_12.bias = Parameter(b12)
+        self.conv2d_13.bias = Parameter(b13)
+
+
+
         self.fc1.weight = Parameter(fcw1)
         #self.fc2.weight = Parameter(fcw2)
        
@@ -239,14 +256,14 @@ class Net(nn.Module):
         self.conv2d_1 = conv2d.TiledConv2d(in_channels=3, 
                                   out_channels=64, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw),
                                   )  
 
         self.conv2d_2 = conv2d.TiledConv2d(in_channels=64, 
                                         out_channels=64, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         ) 
         self.mxp1 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
@@ -254,13 +271,13 @@ class Net(nn.Module):
         self.conv2d_3 = conv2d.TiledConv2d(in_channels=64, 
                                         out_channels=128, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_4 = conv2d.TiledConv2d(in_channels=128, 
                                         out_channels=128, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         )
 
@@ -269,20 +286,20 @@ class Net(nn.Module):
         self.conv2d_5 = conv2d.TiledConv2d(in_channels=128, 
                                   out_channels=256, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  #bias = False,
                                   padding=(Ph,Pw),
                                   )  
 
         self.conv2d_6 = conv2d.TiledConv2d(in_channels=256, 
                                         out_channels=256, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         ) 
         self.conv2d_7 = conv2d.TiledConv2d(in_channels=256, 
                                         out_channels=256, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.mxp3 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
@@ -290,19 +307,19 @@ class Net(nn.Module):
         self.conv2d_8 = conv2d.TiledConv2d(in_channels=256, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_9 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_10 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         )
 
@@ -311,19 +328,19 @@ class Net(nn.Module):
         self.conv2d_11 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_12 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_13 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        #bias = False,
                                         padding=(Ph,Pw),
                                         )
 
@@ -422,7 +439,7 @@ import time
 
 def main():
     torch.set_printoptions(profile="full")
-    torch.set_default_dtype(torch.float32)
+    torch.set_default_dtype(torch.float64)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Net().to(device)
 
@@ -442,12 +459,30 @@ def main():
     w11 = model.conv2d_11.weight.data
     w12 = model.conv2d_12.weight.data
     w13 = model.conv2d_13.weight.data
+    b1 = model.conv2d_1.bias.data
+    b2 = model.conv2d_2.bias.data
+    b3 = model.conv2d_3.bias.data
+    b4 = model.conv2d_4.bias.data
+    b5 = model.conv2d_5.bias.data
+    b6 = model.conv2d_6.bias.data
+    b7 = model.conv2d_7.bias.data
+    b8 = model.conv2d_8.bias.data
+    b9 = model.conv2d_9.bias.data
+    b10 = model.conv2d_10.bias.data
+    b11 = model.conv2d_11.bias.data
+    b12 = model.conv2d_12.bias.data
+    b13 = model.conv2d_13.bias.data
+
+  
+
+
 
     fcw1 = model.fc1.weight.data
     # fcw2 = model.fc2.weight.data
     fcw2= None
     
-    model_ref =  Net_ref(w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, fcw1, fcw2).to(device)
+    model_ref =  Net_ref(w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, fcw1, fcw2
+    , b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13).to(device)
     
     start_time = time.time()
     input_ref = input.data.clone() 
@@ -506,14 +541,11 @@ def main():
     print("#### compare w7")
     correctness_check.check_equal(model_ref.conv2d_7.weight.grad, model.conv2d_7.weight.grad, False)
 
-
     print("#### compare w8")
     correctness_check.check_equal(model_ref.conv2d_8.weight.grad, model.conv2d_8.weight.grad, False)
 
-
     print("#### compare w9")
     correctness_check.check_equal(model_ref.conv2d_9.weight.grad, model.conv2d_9.weight.grad, False)
-
 
     print("#### compare w10")
     correctness_check.check_equal(model_ref.conv2d_10.weight.grad, model.conv2d_10.weight.grad, False)
@@ -526,6 +558,51 @@ def main():
 
     print("#### compare w13")
     correctness_check.check_equal(model_ref.conv2d_13.weight.grad, model.conv2d_13.weight.grad, False)
+
+
+
+    print("#### compare bias1")
+    correctness_check.check_equal(model_ref.conv2d_1.bias.grad, model.conv2d_1.bias.grad, False)
+    
+    print("#### compare bias2")
+    correctness_check.check_equal(model_ref.conv2d_2.bias.grad, model.conv2d_2.bias.grad, False)
+    
+    print("#### compare bias3")
+    correctness_check.check_equal(model_ref.conv2d_3.bias.grad, model.conv2d_3.bias.grad, False)
+    
+    print("#### compare bias4")
+    correctness_check.check_equal(model_ref.conv2d_4.bias.grad, model.conv2d_4.bias.grad, False)
+    
+    print("#### compare bias5")
+    correctness_check.check_equal(model_ref.conv2d_5.bias.grad, model.conv2d_5.bias.grad, False)
+    
+    print("#### compare bias6")
+    correctness_check.check_equal(model_ref.conv2d_6.bias.grad, model.conv2d_6.bias.grad, False)
+    
+    print("#### compare bias7")
+    correctness_check.check_equal(model_ref.conv2d_7.bias.grad, model.conv2d_7.bias.grad, False)
+    
+    print("#### compare bias8")
+    correctness_check.check_equal(model_ref.conv2d_8.bias.grad, model.conv2d_8.bias.grad, False)
+    
+    print("#### compare bias9")
+    correctness_check.check_equal(model_ref.conv2d_9.bias.grad, model.conv2d_9.bias.grad, False)
+    
+    print("#### compare bias10")
+    correctness_check.check_equal(model_ref.conv2d_10.bias.grad, model.conv2d_10.bias.grad, False)
+    
+    print("#### compare bias11")
+    correctness_check.check_equal(model_ref.conv2d_11.bias.grad, model.conv2d_11.bias.grad, False)
+    
+    print("#### compare bias12")
+    correctness_check.check_equal(model_ref.conv2d_12.bias.grad, model.conv2d_12.bias.grad, False)
+    
+    print("#### compare bias13")
+    correctness_check.check_equal(model_ref.conv2d_13.bias.grad, model.conv2d_13.bias.grad, False)
+
+    #print(model.conv2d_11.bias.grad)
+
+
 
 
 if __name__=="__main__":
