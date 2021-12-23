@@ -301,8 +301,12 @@ class TiledConv2dFunction(torch.autograd.Function):
                                                             f_info, next_f_info, weight_size,\
                                                             padding, stride)
                         grad_weight = torch.cudnn_convolution_backward_weight(weight_size , new_grad_output, new_input_tensor, our_padding, stride, dilation, group, False, False, False)
-                    
-                        grad_bias = None
+                        temp_b = torch.sum(new_grad_output, (0,2,3))
+                        if ctx.needs_input_grad[2]:
+                            grad_bias = temp_b
+                            print(grad_bias)
+                        else:
+                            grad_bias = None
                     else:
                         grad_weight = None
                         grad_bias = None
@@ -417,8 +421,13 @@ class TiledConv2dFunction(torch.autograd.Function):
                                                             padding, stride)
                         grad_weight = torch.cudnn_convolution_backward_weight(weight_size , new_grad_output, new_input_tensor, our_padding, stride, dilation, group, False, False, False)
                     
-                            
-                        grad_bias = None
+                        #print("conv2d bp new_grad_output shape", new_grad_output.size())
+                        temp_b = torch.sum(new_grad_output, (0,2,3))
+                        if ctx.needs_input_grad[2]:
+                            grad_bias = temp_b
+                            print(grad_bias)
+                        else:
+                            grad_bias = None
                     else:
                         grad_weight = None
                         grad_bias = None
