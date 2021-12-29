@@ -172,28 +172,45 @@ class Net(nn.Module):
         out = self.sft(out)
         return out
 
+def trace_handler(prof):
+    print(prof.key_averages().table(
+        sort_by="self_cuda_time_total", row_limit=-1))
+    # prof.export_chrome_trace("/tmp/test_trace_" + str(prof.step_num) + ".json")
+
+
+
 def main():
     torch.set_printoptions(profile="full")
     torch.set_default_dtype(torch.float32)
+    torch.cuda.empty_cache() 
 
     # add loss function here
     criterion = nn.MSELoss()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     memUsage = memory.MeasureMemory(device)
-    #print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
     # print("==== real init ...")
     # our_initmem = memUsage.currentValue()
     # print(memory.MemSize(our_initmem))     
     # print(memUsage.available())
 
     model = Net().to(device)
-    #print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
     # print("==== our init ...")
     # our_initmem = memUsage.currentValue()
     # print(memory.MemSize(our_initmem))     
     # print(memUsage.available())
+    # with torch.profiler.profile(
+    #     #with_stack=True,
+    #     with_flops=True, 
+    #     activities=[
+    #     torch.profiler.ProfilerActivity.CPU,
+    #     torch.profiler.ProfilerActivity.CUDA,
+    #         ],
+    #     on_trace_ready=trace_handler
+    #     ) as profiler:
 
 
     ref_elapsed_fwd = 0
@@ -227,7 +244,7 @@ def main():
     ref_elapsed_total = time.time() - start_time
     #print("done ref bkw")
     print("\n&& {}\n".format(ref_elapsed_total) )
-    
+
 
 
     # print("==== our_bwd done ...")

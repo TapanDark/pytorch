@@ -132,7 +132,10 @@ class Net_ref(nn.Module):
         out = self.block1(x)
         return out
 
-
+def trace_handler(prof):
+    print(prof.key_averages().table(
+        sort_by="self_cuda_time_total", row_limit=-1))
+    # prof.export_chrome_trace("/tmp/test_trace_" + str(prof.step_num) + ".json")
 
 
 def main():
@@ -163,6 +166,21 @@ def main():
 
     ref_elapsed_fwd = 0
     ref_elapsed_bwk = 0
+
+    # with torch.profiler.profile(
+    #     #with_stack=True,
+    #     with_flops=True, 
+    #     activities=[
+    #     torch.profiler.ProfilerActivity.CPU,
+    #     torch.profiler.ProfilerActivity.CUDA,
+    #         ],
+    #     on_trace_ready=trace_handler
+    #     ) as profiler:
+        
+    #     #profiler.start()
+
+
+
     start_time = time.time()    
     for i in range(0,1):
         input_ref = torch.rand(batch,chanel,H,W)
@@ -195,14 +213,16 @@ def main():
     #print("done ref bkw")
     print("\n&& {}\n".format(ref_elapsed_total) )
     
-    # print("==== ref_bwd done ...")
-    # ref_bwd_use = memUsage.currentValue()-ref_fwd_use
-    # ref_bwd_use_total = memUsage.currentValue()-initmem
-    # print("ref_bwd_use",memory.MemSize(ref_bwd_use))      
-    # print("ref_bwd_use t", memory.MemSize(ref_bwd_use_total))     
-    # print("avail ref", memUsage.available())
-    # print("max ref", memUsage.maxx(),  memUsage.maximumValue())
-    # print("input graad", input_ref.grad[0,0,0,17])
+        # print("==== ref_bwd done ...")
+        # ref_bwd_use = memUsage.currentValue()-ref_fwd_use
+        # ref_bwd_use_total = memUsage.currentValue()-initmem
+        # print("ref_bwd_use",memory.MemSize(ref_bwd_use))      
+        # print("ref_bwd_use t", memory.MemSize(ref_bwd_use_total))     
+        # print("avail ref", memUsage.available())
+        # print("max ref", memUsage.maxx(),  memUsage.maximumValue())
+        # print("input graad", input_ref.grad[0,0,0,17])
+
+        #profiler.stop()
 
 import sys
 
@@ -212,7 +232,7 @@ if __name__=="__main__":
     Ph = 1
     Pw = 1
     chanel = 3
-    batch = 8
+    batch = 1
 
 
     H = int(sys.argv[1])

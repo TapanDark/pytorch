@@ -24,7 +24,7 @@ def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, n
     # print("bwd_out_shape ", bwd_out_shape)
     # print("fwd_out_shape ", fwd_out_shape)
     if not shape_compatible(fwd_out_shape, bwd_out_shape):
-        print("Yes, fwd is smaller")
+        #print("Yes, fwd is smaller")
         f_info = compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg.copy(), shape_dict, b_info, nTh, nTw)
     else:
         f_info = compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg.copy(), shape_dict, b_info, nTh, nTw)

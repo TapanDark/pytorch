@@ -1196,14 +1196,14 @@ class DeviceCachingAllocator {
 
   void release_blocks(BlockPool& pool) {
     // Frees all non-split blocks
-    auto it = pool.blocks.begin();
-    while (it != pool.blocks.end()) {
-      Block* block = *it;
-      ++it;
-      if (!block->prev && !block->next) {
-        release_block(block);
-      }
-    }
+    // auto it = pool.blocks.begin();
+    // while (it != pool.blocks.end()) {
+    //   Block* block = *it;
+    //   ++it;
+    //   if (!block->prev && !block->next) {
+    //     release_block(block);
+    //   }
+    // }
   }
 
   cudaEvent_t create_event_internal() {

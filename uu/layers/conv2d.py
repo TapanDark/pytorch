@@ -17,7 +17,7 @@ import time
 
 myctx_dict = {}
 #for correctness debug 
-USE_DEFAULT_CTX = True
+USE_DEFAULT_CTX = False
 
 class TiledConv2dFunction(torch.autograd.Function):
     @staticmethod
@@ -103,7 +103,7 @@ class TiledConv2dFunction(torch.autograd.Function):
                 # print("== tiled conv2d forward / reg layer conv creat next")
             return out
         else:   #NOT USE_DEFAULT_CTX
-            # print("myctx_dict.keys()", myctx_dict.keys())
+            #print("myctx_dict.keys()", myctx_dict.keys())
             if uniq_id in myctx_dict.keys():
                 #print("need to get existing")
                 myctx = myctx_dict[uniq_id]
