@@ -6,7 +6,7 @@ import math
 
 from uu.utils import correctness_check
 from uu.utils.meta_info import Pad_info
-
+import copy
 
 def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, nTw, stream_structure, shape_dict) -> Dict:
     list_op__in_chckp_seg = []
@@ -208,7 +208,8 @@ def get_input_tile(info:Dict, input, first_op_in_seg):
     with torch.no_grad():
         pi = info[first_op_in_seg]
         slice_info = pi.input_slice
-        input_tile = input[:, :, slice_info[2]:slice_info[3]+1, slice_info[0]:slice_info[1]+1]       #NCHW
+        # TODO: optimize copy
+        input_tile = copy.copy(input[:, :, slice_info[2]:slice_info[3]+1, slice_info[0]:slice_info[1]+1])       #NCHW
 
     input_tile.requires_grad = input.requires_grad
     assert input_tile is not None
@@ -217,7 +218,7 @@ def get_input_tile(info:Dict, input, first_op_in_seg):
 
 
 def resize_grad_in(info, grad_input):
-    # print("padding info ::", info.padding_info)
+    
     # print("grad_input old", grad_input.size())
     if info.padding_info != [0] * len(info.padding_info):
         top = 0 + info.padding_info[2]
@@ -232,6 +233,7 @@ def resize_grad_in(info, grad_input):
         
         #assert grad_input_new.size() == grad_input_shape
         #old padding
+        #print(" resize_grad_in padding info ::")
         pd = torch.nn.ConstantPad2d(info.padding_info, 0)
         grad_input = pd(grad_input)
         #print("grad_input new", grad_input.size())
@@ -434,7 +436,7 @@ def recreate_input_tile_f(info:Dict, input, next_id):
             input_tile = input[:, :, top:bottom, left:right]       #NCHW, included index
             #print("== inputtile for next", input_tile)
             #print(padding_info)
-
+            # print(" recreate_input_tile_f p ", pi.coord ,padding_info)
             pd = torch.nn.ConstantPad2d(padding_info, 0)
             input_tile = pd(input_tile)
             # return input_tile

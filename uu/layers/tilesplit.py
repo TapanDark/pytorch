@@ -20,8 +20,8 @@ class TiledSplitFunction(torch.autograd.Function):
         
         input = padding_calc.get_input_tile(info[0], x, first_op_in_seg)
         
-    
         is_m_cuda = True if "cuda" in str(model_device) else False
+        #print("#########", ctx.input_is_cuda, is_m_cuda)
         if ctx.input_is_cuda != is_m_cuda:
             # print("#########", ctx.input_is_cuda)
             # print(model_device)

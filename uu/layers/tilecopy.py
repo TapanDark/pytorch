@@ -29,15 +29,17 @@ class TiledCopyFunction(torch.autograd.Function):
             #print("\n^^^^^TiledCopyFunction assign final grad_out", TiledCopyFunction.GRAD_OUT.is_cuda, grad_output.is_cuda)
 
 
-        # based on num of input to generate return tuple
+        #based on num of input to generate return tuple
         res = list()
         res.append(TiledCopyFunction.GRAD_OUT)
         res.append(None)    # last arg is dim, no need for grad
         res.append(None)
         res.append(None)
         res = tuple(res)
-        # print(TiledCopyFunction.GRAD_OUT)
+        #print(TiledCopyFunction.GRAD_OUT)
         return res
+
+        #return (TiledCopyFunction.GRAD_OUT, None, None, None)
 
 
 
