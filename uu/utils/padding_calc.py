@@ -202,6 +202,11 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
             op_idex += 1
     return bwd_info_dict
 
+def samestorage(x,y):
+    if x.storage().data_ptr()==y.storage().data_ptr():
+        print("same storage")
+    else:
+        print("different storage")
 
 def get_input_tile(info:Dict, input, first_op_in_seg):
     input_tile = None
@@ -209,7 +214,28 @@ def get_input_tile(info:Dict, input, first_op_in_seg):
         pi = info[first_op_in_seg]
         slice_info = pi.input_slice
         # TODO: optimize copy
-        input_tile = copy.copy(input[:, :, slice_info[2]:slice_info[3]+1, slice_info[0]:slice_info[1]+1])       #NCHW
+        temp_view = input[:, :, slice_info[2]:slice_info[3]+1, slice_info[0]:slice_info[1]+1]      #NCHW
+        
+        # new_storage = temp_view.storage()
+        # #print(input_tile.storage_offset(),input_tile.size(), input_tile.stride())
+        # input_tile = torch.tensor(new_storage)
+
+        # input_tile = torch.empty(temp_view.size())
+        # input_tile.set_(new_storage, input_tile.storage_offset(), input_tile.size(), input_tile.stride())
+
+       
+        # input_tile = temp_view                                        # shallow-copy (25 s) | non-conti
+        # input_tile = temp_view.contiguous()                           # deep-copy (25 s) | conti
+        # input_tile = copy.deepcopy(temp_view)                         # overall time is slowest (40 s) | non-conti
+        # input_tile = torch.empty_like(temp_view).copy_(temp_view)     # deep-copy (25 s) | conti
+        # input_tile = temp_view.clone().detach()                       # deep-copy (25 s) | conti
+        # print("input id", id(input))
+        # print("input_tile id", id(input_tile))
+        #input_tile = input_tile.contiguous()
+        samestorage(input,input_tile)
+        # print("is_contiguous()", input_tile.is_contiguous())
+        #print("type of tensor data", type(new_storage))
+        
 
     input_tile.requires_grad = input.requires_grad
     assert input_tile is not None

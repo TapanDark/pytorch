@@ -79,6 +79,7 @@ def _rebuild_from_type_v2(func, new_type, args, state):
 # otherwise, it will not show up in autocomplete.
 class Tensor(torch._C._TensorBase):
     def __deepcopy__(self, memo):
+        #print("call deep copy")
         if has_torch_function_unary(self):
             return handle_torch_function(Tensor.__deepcopy__, (self,), self, memo)
         if not self.is_leaf:
