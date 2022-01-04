@@ -8,6 +8,7 @@
 #include <ATen/native/TensorIterator.h>
 #include <ATen/native/cuda/Loops.cuh>
 #include <THC/THC.h>
+#include <iostream>
 
 namespace at {
 namespace native {
@@ -51,10 +52,12 @@ void copy_device_to_device(TensorIterator& iter, bool non_blocking) {
     dst_ready.block(copy_stream);
   }
 
+  //std::cout << " t " << same_type << " c " << same_conj << " n " << same_neg << " conti " << iter.is_contiguous() << "\n";
   if (memcpy_eligible) {
     void *dst = iter.data_ptr(0);
     void *src = iter.data_ptr(1);
     size_t size = numel * iter.element_size(0);
+    //std::cout << "hit here??\n";
     if (src != dst || src_device != dst_device) {
       // Perform the copy
       AT_CUDA_CHECK(cudaMemcpyAsync(
@@ -63,6 +66,7 @@ void copy_device_to_device(TensorIterator& iter, bool non_blocking) {
           copy_stream));
     }
   } else {
+    //std::cout << "else??\n";
     auto dtype = iter.dtype(0);
     if (isQIntType(dtype)) {
       AT_DISPATCH_QINT_TYPES(dtype, "copy_", [&] {
@@ -76,6 +80,7 @@ void copy_device_to_device(TensorIterator& iter, bool non_blocking) {
                 gpu_kernel(iter, [] GPU_LAMBDA(scalar_t x) { return std::conj(x); });
               });
         } else {
+          //std::cout<< "go here\n";
           AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
               kHalf, kBool, kBFloat16, dtype, "copy_", [&] {
                 gpu_kernel(iter, [] GPU_LAMBDA(scalar_t x) { return x; });

@@ -8,13 +8,15 @@ from typing import List, Optional
 USE_DEFAULT_CTX = True
 myctx_dict = {}
 partial_sums_tile = []
-
+BK_FLAG = False
+FINAL_res = None
 class cGAvgPool2dFunction(torch.autograd.Function):
     # create a static variable
     @staticmethod
     def forward(ctx, *inputs):
-        
-        print("\n^^^^^cGavgPool2dFunction fwd")
+        global BK_FLAG
+        global FINAL_res
+        # print("\n^^^^^cGavgPool2dFunction fwd", BK_FLAG)
         input = inputs[0]   # tiled input Do we need to get disjoint part??
         info = inputs[1]   # current info
         ctx.info = info
@@ -23,10 +25,7 @@ class cGAvgPool2dFunction(torch.autograd.Function):
         f_info = info[0][uniq_id]
         b_info = info[1][uniq_id]
 
-
-        
-
-        if USE_DEFAULT_CTX:
+        if USE_DEFAULT_CTX and not BK_FLAG:
             ctx.uniq_id = uniq_id
             b = input.size()[0]
             c = input.size()[1]
@@ -51,7 +50,7 @@ class cGAvgPool2dFunction(torch.autograd.Function):
 
             #print("previous f_info", pre_f_info)
             
-            print("input ", input.size())
+            #print("input ", input.size())
             # sum all tile piece elements:
             dim_tp = (len(input.size())-2, len(input.size())-1)
             # extract non-disjoint
@@ -85,6 +84,7 @@ class cGAvgPool2dFunction(torch.autograd.Function):
         
             if coord_h == nTh-1 and coord_w == nTw-1:
                 # get all tiles partial sum
+                BK_FLAG = True
                 assert(len(partial_sums_tile) == nTh*nTw)
                 accum = partial_sums_tile[0]
                 # accumlate all partial sum
@@ -100,7 +100,8 @@ class cGAvgPool2dFunction(torch.autograd.Function):
                 # print("accum", accum)
                 # print("num_of_element", num_of_element)
                 out_value = accum / num_of_element 
-                print("out_value size", out_value.size())
+                #print("out_value size", out_value.size())
+                FINAL_res = out_value
                 return out_value # tensor
             else:
                 # none-last tile return None
@@ -108,13 +109,39 @@ class cGAvgPool2dFunction(torch.autograd.Function):
                 ctx.num_of_element = num_of_element
                 fake_out = torch.zeros(partial_sums_tile[0].size(), requires_grad=True).cuda()
                 fake_out = fake_out[:, :, None,None]
-                print("fake size", fake_out.size())
+                #print("fake size", fake_out.size())
                 return fake_out
+        else:
+            # BK skip recomputation
+            ctx.uniq_id = uniq_id
+            b = input.size()[0]
+            c = input.size()[1]
+            h = input.size()[2]
+            w = input.size()[3]
+            ctx.b = b
+            ctx.c = c
+            ctx.h = h
+            ctx.w = w
+            coord_h = f_info.coord[0]
+            coord_w = f_info.coord[1]
+            nTh = f_info.numof_tiles[0]
+            nTw = f_info.numof_tiles[1]
+
+            # have to find the info from previous op
+            # for input view non_disjoint
+            previous_op_id = b_info.next_id
+            pre_f_info = info[0][previous_op_id]
+
+            non_disjoint_tile_size_h = pre_f_info.non_disjoint_tile_size[0]
+            non_disjoint_tile_size_w = pre_f_info.non_disjoint_tile_size[1]
+            num_of_element = non_disjoint_tile_size_h*nTh * non_disjoint_tile_size_w*nTw
+            ctx.num_of_element = num_of_element
+            return FINAL_res
 
 
     @staticmethod
     def backward(ctx, grad_output):
-        print("^^^^^cGavgPool2dFunction bkw")
+        # print("^^^^^cGavgPool2dFunction bkw")
         if USE_DEFAULT_CTX:
             f_info = ctx.info[0][ctx.uniq_id]
             b_info = ctx.info[1][ctx.uniq_id]
@@ -127,14 +154,14 @@ class cGAvgPool2dFunction(torch.autograd.Function):
             if rev_g_depth == 0:
                 grad_in = torch.zeros(b, c, h, w).cuda()
 
-                print("grad_t1 original", grad_in.size())
+                # print("grad_t1 original", grad_in.size())
                 for i in range(0,b):
                     for j in range (0,c):
                         grad_in[i,j,:,:] = grad_output[i,j]/ctx.num_of_element
             
             
-            print("grad_output", grad_output)
-            print("grad_t1 original", grad_in)
+            # print("grad_output", grad_output.size())
+            # print("grad_t1 original", grad_in.size())
         return grad_in, None, None, None
        
         

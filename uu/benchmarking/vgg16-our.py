@@ -152,7 +152,7 @@ class Net(nn.Module):
                 input_shape = (N,C,H,W)
                 output_shape = (N,C,oH,oW)
                 info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
-    
+                # print(info)
                 #print("++++++++++++++++++++++++++++++++++++++++++++++++")
                 out_temp = checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
 
@@ -269,9 +269,9 @@ if __name__=="__main__":
 
 
     H = int(sys.argv[1])
-    W = H
+    W = int(sys.argv[2])
     oH = H//32
     oW = W//32
-    nTh = int(sys.argv[2])
-    nTw = nTh
+    nTh = int(sys.argv[3])
+    nTw = int(sys.argv[4])
     main()

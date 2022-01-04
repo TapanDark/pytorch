@@ -207,34 +207,43 @@ def samestorage(x,y):
         print("same storage")
     else:
         print("different storage")
+import time
 
+# G_TIME = 0.0
 def get_input_tile(info:Dict, input, first_op_in_seg):
+    #global G_TIME
     input_tile = None
     with torch.no_grad():
         pi = info[first_op_in_seg]
         slice_info = pi.input_slice
         # TODO: optimize copy
         temp_view = input[:, :, slice_info[2]:slice_info[3]+1, slice_info[0]:slice_info[1]+1]      #NCHW
-        
-        # new_storage = temp_view.storage()
+        #start = time.time()
+
         # #print(input_tile.storage_offset(),input_tile.size(), input_tile.stride())
-        # input_tile = torch.tensor(new_storage)
-
+        # new_storage = copy.deepcopy(temp_view.storage())
         # input_tile = torch.empty(temp_view.size())
-        # input_tile.set_(new_storage, input_tile.storage_offset(), input_tile.size(), input_tile.stride())
+        # input_tile.set_(new_storage, input_tile.storage_offset(), input_tile.size(), input_tile.stride()) # deep-copy (38 s) | conti
 
-       
-        # input_tile = temp_view                                        # shallow-copy (25 s) | non-conti
+        input_tile = temp_view                                        # shallow-copy (25 s) | non-conti
         # input_tile = temp_view.contiguous()                           # deep-copy (25 s) | conti
         # input_tile = copy.deepcopy(temp_view)                         # overall time is slowest (40 s) | non-conti
-        # input_tile = torch.empty_like(temp_view).copy_(temp_view)     # deep-copy (25 s) | conti
-        # input_tile = temp_view.clone().detach()                       # deep-copy (25 s) | conti
+       # input_tile = torch.empty_like(temp_view).copy_(temp_view)     # deep-copy (25 s) | conti
+        #input_tile = temp_view.clone().detach()                       # deep-copy (25 s) | conti
+
+        # input_tile = torch.empty(temp_view.size())
+        #print("type of temp_view.size()", type(temp_view.size()))
         # print("input id", id(input))
         # print("input_tile id", id(input_tile))
         #input_tile = input_tile.contiguous()
-        samestorage(input,input_tile)
-        # print("is_contiguous()", input_tile.is_contiguous())
-        #print("type of tensor data", type(new_storage))
+        # samestorage(input, input_tile)
+        # #print("is_contiguous()", input_tile.is_contiguous())
+        # print("type of tensor data", type(temp_view.data_ptr()))
+
+        # stop = time.time()
+        # print("duration :", stop-start)
+        # G_TIME += (stop-start)
+        # print("G duration :", G_TIME)
         
 
     input_tile.requires_grad = input.requires_grad
@@ -490,7 +499,7 @@ def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: Lis
     oH = none_tiled_output_shape[2]
     oW = none_tiled_output_shape[3]
     iH = (oH-1)*stride+RS-2*pads[0]
-    iW = iH     #only consider square
+    iW = (oW-1)*stride+RS-2*pads[1]
     # output view
 
     tile_top = tile_indx[2]

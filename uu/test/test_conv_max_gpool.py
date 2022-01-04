@@ -15,10 +15,10 @@ li_act = []
 grad_dict_bk = {}
 def print_grad(self, grad_input, grad_output):
     print('Inside '+ self.__class__.__name__+ ' backward')
-    print('grad_output size : ', grad_output[0].size())
-    print('ref grad_output  :\n ', grad_output[0])
-    print('grad_input size : ', grad_input[0].size())
-    print('ref grad_input  : \n', grad_input[0])
+    # print('grad_output size : ', grad_output[0].size())
+    # print('ref grad_output  :\n ', grad_output[0])
+    # print('grad_input size : ', grad_input[0].size())
+    # print('ref grad_input  : \n', grad_input[0])
     #li.append( grad_output[0])
 
 def print_activa(self, input, output):
@@ -46,7 +46,7 @@ class Net_ref(nn.Module):
         
                                 
         self.maxpool1 = nn.MaxPool2d((2,2), (2,2))
-        self.avgp = nn.AvgPool2d(oH, stride=1)
+        self.avgp = nn.AdaptiveAvgPool2d((1, 1))
         self.sft = nn.Softmax(dim=-1)
 
         self.conv2d_1.weight = Parameter(w1)
@@ -107,7 +107,7 @@ class Net(nn.Module):
         stream_structure = self.block1
 
         out = torch.zeros(N, C, oH, oW, requires_grad=True).cuda()
-        #print("out shape", out.size())
+        # print("shape_dict", shape_dict)
         for i in range(0,nTh): 
             for j in range(0,nTw):
                 coord = [i,j]
@@ -116,10 +116,10 @@ class Net(nn.Module):
                 input_shape = (N,C,H,W)
                 output_shape = (N,C,oH,oW)
                 info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
+               
+                #out += self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
+                out += checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
 
-                
-                out += self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
-                
                 # if out_temp is not None:
                 #     print("out tile", out_temp.size(), out_temp)
 
@@ -150,15 +150,18 @@ def main():
     out_ref = model_ref(input_ref)
     out_ref.sum().backward()
     
-    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
 
     out = model(input, H, W, nTh, nTw )
-    out.sum().backward()
-
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
     print("~~ check forward correctness ~~")
     correctness_check.check_equal(out, out_ref, False)
+    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+
+
+    out.sum().backward()
+
 
     print("#### compare w1")
     correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
@@ -176,14 +179,14 @@ if __name__=="__main__":
     Ph = 1
     Pw = 1
     chanel = 3
-    batch = 2
+    batch = 1
 
 
 
-    H = 64
-    W = H
+    H = 256
+    W = 256
     oH = H//2
     oW = W//2
     nTh = 2
-    nTw = nTh
+    nTw = 2
     main()

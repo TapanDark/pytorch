@@ -44,7 +44,7 @@ class cMaxPool2dFunction(torch.autograd.Function):
             return out_value
         else:
             if uniq_id in myctx_dict.keys():
-                #print("need to get existing")
+                # print("need to get existing")
                 myctx = myctx_dict[uniq_id]
                 # del myctx
                 # myctx = MMctx()
@@ -61,6 +61,7 @@ class cMaxPool2dFunction(torch.autograd.Function):
                 myctx.kernel_size = kernel_size
                 myctx.padding = padding
                 myctx.info = inputs[4]
+                # del(myctx.input) 
                 myctx.input = input
                 myctx.arg_max = out_index
                 del out
@@ -72,6 +73,8 @@ class cMaxPool2dFunction(torch.autograd.Function):
             
             # place this entry
             myctx_dict[uniq_id] = myctx
+            # print("fwd input size", input.size(), input[0,0,0,0:10])
+            #print("fwd myctx input size", myctx.input.size())
             del input
             
             return out_value
@@ -111,7 +114,7 @@ class cMaxPool2dFunction(torch.autograd.Function):
             
             myctx = myctx_dict[ctx.uniq_id]
 
-            # print("input size", myctx.input.size())
+            # print("myctx input size", myctx.input[0,0,0,0:10])
             # print("grad_out size",grad_output.size())
             #print("grad_out ",grad_output)
             # print("arg size",myctx.arg_max.size())
