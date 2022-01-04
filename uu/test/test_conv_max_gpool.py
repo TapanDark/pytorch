@@ -78,14 +78,14 @@ class Net(nn.Module):
         self.conv2d_1 = conv2d.TiledConv2d(in_channels=chanel, 
                                   out_channels=chanel, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  bias = True,
                                   padding=(Ph,Pw),
                                   )  
 
         self.conv2d_2 = conv2d.TiledConv2d(in_channels=chanel, 
                                         out_channels=chanel, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        bias = True,
                                         padding=(Ph,Pw),
                                         ) 
         self.mxp1 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
@@ -154,20 +154,20 @@ def main():
 
 
     out = model(input, H, W, nTh, nTw )
-    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
-    print("~~ check forward correctness ~~")
-    correctness_check.check_equal(out, out_ref, False)
-    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    # print("~~ check forward correctness ~~")
+    # correctness_check.check_equal(out, out_ref, False)
+    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
 
     out.sum().backward()
 
 
-    print("#### compare w1")
-    correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
+    # print("#### compare w1")
+    # correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
 
-    print("#### compare w2")
-    correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
+    # print("#### compare w2")
+    # correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
 
 
 
