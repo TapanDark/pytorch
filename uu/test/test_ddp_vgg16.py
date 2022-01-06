@@ -43,7 +43,7 @@ Kw = 3
 Ph = 1
 Pw = 1
 chanel = 3
-batch = 8
+batch = 24
 
 H = 256
 W = 256
@@ -390,7 +390,7 @@ class Net(nn.Module):
     def forward(self, x, H, W, nTh, nTw, ):
         #nTh, nTw -- num of tiles in H,W
         model_device = next(self.parameters()).device
-        batch = 1
+        batch = 2
         N, C, oH, oW, shape_dict = shape_infer.shape_infer_sequence(self.block1, H, W, batch, chanel)
         # print("!!!!!!!", len(shape_dict))
         # print("!!!!!!!", oH, oW)
@@ -636,8 +636,8 @@ def main():
 
 
 def train(gpu, args):
-    model = args.model
-    model.cuda(gpu)
+    
+    
 
     train_dataset = args.td
     rank = args.nr * args.gpus + gpu
@@ -646,16 +646,19 @@ def train(gpu, args):
     torch.manual_seed(0)
 
     # Wrap the model
+    model = args.model
+    model = model.to(rank)
     model = nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset,
                                                                     num_replicas=args.world_size,
                                                                     rank=rank)
+    print("*** batch ", batch)
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                batch_size=batch,
                                                shuffle=False,
                                                num_workers=0,
                                                pin_memory=True,
-                                               sampler=train_sampler)
+                                               )
     
     total_step = len(train_loader)
     print("epoch, step", args.epochs, total_step)
