@@ -407,8 +407,8 @@ class Net(nn.Module):
                 # print("temp ", temp[0,0,0,0], out[0,0,0,0])
                 # out += temp
 
-        # out = torch.flatten(out, 1)
-        # out = self.classifier(out)
+        out = torch.flatten(out, 1)
+        out = self.classifier(out)
         return out
 
 
@@ -628,7 +628,7 @@ def train(gpu, args):
     model = model.to(rank)
     model = nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
     #TODO: need to double check correctness
-    model._set_static_graph()
+    # model._set_static_graph()
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset,
                                                                     num_replicas=args.world_size,
                                                                     rank=rank)
@@ -651,7 +651,7 @@ def train(gpu, args):
             # print("reference itr", i, rank)
 
             out = model(images, images.size()[0], images.size()[1], images.size()[2], images.size()[3], nTh, nTw)
-            print("output-t size()", out.size(), out[0,0,0,0])
+            print("output-t size()", out.size())
             # Backward and optimize 
             out.sum().backward()
 
