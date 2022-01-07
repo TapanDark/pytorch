@@ -8,7 +8,7 @@ from uu.utils import correctness_check
 from uu.utils.meta_info import Pad_info
 import copy
 
-def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, nTw, stream_structure, shape_dict) -> Dict:
+def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, nTw, stream_structure, shape_dict, model_device) -> Dict:
     list_op__in_chckp_seg = []
     # just extract prue conv-max linklist
     for op in stream_structure._modules.values():
@@ -18,7 +18,7 @@ def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, n
         #print("hash", id(op))
 
     # calc bwd_index info first
-    b_info = compute_bwd_info_beta(output_tile_coord, input_shape, nTh, nTw, list_op__in_chckp_seg.copy(), shape_dict)
+    b_info = compute_bwd_info_beta(output_tile_coord, input_shape, nTh, nTw, list_op__in_chckp_seg.copy(), shape_dict, model_device)
     bwd_out_shape = b_info[id(op)].cur_output_shape
     fwd_out_shape = (output_shape[2]//nTh, output_shape[3]//nTw)
     # print("bwd_out_shape ", bwd_out_shape)
@@ -129,7 +129,7 @@ def compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg, shape_dict, 
     return fwd_info_dict
 
 
-def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_op__in_chckp_seg, shape_dict) -> Dict:
+def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_op__in_chckp_seg, shape_dict, model_device) -> Dict:
     bwd_info_dict = {}
     # !! in the backward info, the cur_output_shape is in fact the input of this op
 
@@ -152,7 +152,7 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
                 input_slice = [tile_left, tile_right, tile_top, tile_bottom]
                 real_index = input_slice
                 opname = "fake-grad-IN"
-                pi = Pad_info(output_tile_coord, [Th, Tw], (), input_slice, (), real_index, opname, -11, -11, -101, False, [], [nTh, nTw])
+                pi = Pad_info(output_tile_coord, [Th, Tw], (), input_slice, (), real_index, opname, -11, -11, -101, False, [], [nTh, nTw], model_device)
                 bwd_info_dict[-11] = pi
             
             if isinstance(op, conv2d.TiledConv2d):

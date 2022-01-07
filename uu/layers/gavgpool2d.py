@@ -16,7 +16,7 @@ class cGAvgPool2dFunction(torch.autograd.Function):
     def forward(ctx, *inputs):
         global BK_FLAG
         global FINAL_res
-        # print("\n^^^^^cGavgPool2dFunction fwd", BK_FLAG)
+        #print("\n^^^^^cGavgPool2dFunction fwd", BK_FLAG, inputs[4])
         input = inputs[0]   # tiled input Do we need to get disjoint part??
         info = inputs[1]   # current info
         ctx.info = info
@@ -24,6 +24,8 @@ class cGAvgPool2dFunction(torch.autograd.Function):
         is_ccheckpoint = inputs[3]
         f_info = info[0][uniq_id]
         b_info = info[1][uniq_id]
+        ctx.model_device = inputs[4]
+        
 
         if USE_DEFAULT_CTX and not BK_FLAG:
             ctx.uniq_id = uniq_id
@@ -107,7 +109,7 @@ class cGAvgPool2dFunction(torch.autograd.Function):
                 # none-last tile return None
                 num_of_element = non_disjoint_tile_size_h*nTh * non_disjoint_tile_size_w*nTw
                 ctx.num_of_element = num_of_element
-                fake_out = torch.zeros(partial_sums_tile[0].size(), requires_grad=True).cuda()
+                fake_out = torch.zeros(partial_sums_tile[0].size(), requires_grad=True).to(inputs[4])
                 fake_out = fake_out[:, :, None,None]
                 #print("fake size", fake_out.size())
                 return fake_out
@@ -141,7 +143,7 @@ class cGAvgPool2dFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        # print("^^^^^cGavgPool2dFunction bkw")
+        #print("^^^^^cGavgPool2dFunction bkw")
         if USE_DEFAULT_CTX:
             f_info = ctx.info[0][ctx.uniq_id]
             b_info = ctx.info[1][ctx.uniq_id]
@@ -152,9 +154,9 @@ class cGAvgPool2dFunction(torch.autograd.Function):
 
             rev_g_depth = f_info.op_idex # must be last in our global seg
             if rev_g_depth == 0:
-                grad_in = torch.zeros(b, c, h, w).cuda()
-
-                # print("grad_t1 original", grad_in.size())
+                
+                grad_in = torch.zeros(b, c, h, w).to(ctx.model_device)
+                #print("grad_t1 original", ctx.model_device, grad_in.size(), grad_in[0,0,0,0])
                 for i in range(0,b):
                     for j in range (0,c):
                         grad_in[i,j,:,:] = grad_output[i,j]/ctx.num_of_element
@@ -162,7 +164,7 @@ class cGAvgPool2dFunction(torch.autograd.Function):
             
             # print("grad_output", grad_output.size())
             # print("grad_t1 original", grad_in.size())
-        return grad_in, None, None, None
+        return grad_in, None, None, None, None
        
         
         
@@ -201,10 +203,11 @@ class cGAvgPool2d(_AvgPoolNd):
         uniq_id = id(self)
         # info[0] is the forward meta info
         pi = info[0][uniq_id]
-
+        model_device = info[1][-11].model_device
+        # model_device = None
         # Gppoling must be the last op in a checkpoint segment
         assert (pi.op_idex == 0)
-        out = cgavgplool(input, info, uniq_id, is_ccheckpoint)
+        out = cgavgplool(input, info, uniq_id, is_ccheckpoint, model_device)
         #print ("mxp FF", out.size())
         return out
        

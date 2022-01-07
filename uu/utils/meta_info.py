@@ -11,7 +11,7 @@
 
 class Pad_info:
     def __init__(self, coord, cur_output_shape, padding_info, input_slice, internal_expand, real_index, opname, \
-        op_idex, local_idex, next_id, local_first, non_disjoint_tile_size, numof_tiles):
+        op_idex, local_idex, next_id, local_first, non_disjoint_tile_size, numof_tiles, model_device=None):
         # tile coodination info on H/W surface; 2d list; based on [0,0]
         self.coord = coord 
         # output shape after current op(either f or b); 2d list
@@ -40,6 +40,8 @@ class Pad_info:
         self.non_disjoint_tile_size = non_disjoint_tile_size
         #[Nth, Ntw]
         self.numof_tiles = numof_tiles 
+
+        self.model_device = model_device
         
     # def copy(self): 
     #     return type(self)(self.coord, self.cur_output_shape, self.padding_info, \
