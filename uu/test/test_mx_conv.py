@@ -240,10 +240,10 @@ if __name__=="__main__":
     batch = 1
 
 
-
-    H = 30*1024
-    W = 30*1024
+    #roughly largest for this network 
+    H = 1840
+    W = 1840
    
-    nTh = 30
+    nTh = 1
     nTw = nTh
     main()

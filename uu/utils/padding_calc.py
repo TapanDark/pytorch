@@ -465,11 +465,12 @@ def recreate_input_tile_f(info:Dict, input, next_id):
             # print(input_shape)
             # print(padding_info)
             # print(slice_info)
-            # print("top, bottom, left, right " , top, bottom, left, right)
+            
             # print("\n===\n")
             
             input_tile = input[:, :, top:bottom, left:right]       #NCHW, included index
-            #print("== inputtile for next", input_tile)
+            # print("top, bottom, left, right " , top, bottom, left, right)
+            # print("== inputtile for next", input_tile.size())
             #print(padding_info)
             # print(" recreate_input_tile_f p ", pi.coord ,padding_info)
             pd = torch.nn.ConstantPad2d(padding_info, 0)
