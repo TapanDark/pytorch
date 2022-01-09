@@ -468,10 +468,13 @@ class DistributedDataParallel(Module, Joinable):
         find_unused_parameters=False,
         check_reduction=False,
         gradient_as_bucket_view=False,
+        tt_model=False, # for our model!!
     ):
 
         super(DistributedDataParallel, self).__init__()
         Joinable.__init__(self)
+        self.tt_model = tt_model
+
         self.logger = None
         if not any((p.requires_grad for p in module.parameters())):
             self._log_and_throw(
@@ -881,11 +884,19 @@ class DistributedDataParallel(Module, Joinable):
                 # Notify joined ranks whether they should sync in backwards pass or not.
                 self._check_global_requires_backward_grad_sync(is_joined_rank=False)
 
-            if self.device_ids:
-                inputs, kwargs = self.to_kwargs(inputs, kwargs, self.device_ids[0])
-                output = self.module(*inputs[0], **kwargs[0])
-            else:
+            # print("i am in DDP forward", self.device_ids)
+            # print("[DDP forward] input is cuda ??", inputs[0].is_cuda )
+            if self.tt_model:
+                """in tt model we deliberately not send input to device rather let split op do it"""
                 output = self.module(*inputs, **kwargs)
+            else:
+                if self.device_ids:
+                    inputs, kwargs = self.to_kwargs(inputs, kwargs, self.device_ids[0])
+                    output = self.module(*inputs[0], **kwargs[0])
+                else:
+                    output = self.module(*inputs, **kwargs)
+            
+
 
             if torch.is_grad_enabled() and self.require_backward_grad_sync:
                 self.require_forward_param_sync = True

@@ -3,29 +3,29 @@ import torch.nn as nn
 from torch.cuda import init
 from uu.utils import shape_infer 
 from uu.utils import padding_calc
-from uu.layers import maxpool2d, conv2d, sequential, tilesplit, tilecopy, relu
+from uu.layers import maxpool2d, conv2d, sequential, tilesplit, tilecopy, relu, gavgpool2d
 from torch.nn.parameter import Parameter
 from uu.utils import correctness_check 
 from uu.utils import memory 
 from uu.utils import checkpoint
 import time
 
-
-
+gpool_size = 1
+num_classes = 1024
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv2d_1 = conv2d.TiledConv2d(in_channels=3, 
                                   out_channels=64, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  # bias = False,
                                   padding=(Ph,Pw),
                                   )  
 
         self.conv2d_2 = conv2d.TiledConv2d(in_channels=64, 
                                         out_channels=64, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         ) 
         self.mxp1 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
@@ -33,13 +33,13 @@ class Net(nn.Module):
         self.conv2d_3 = conv2d.TiledConv2d(in_channels=64, 
                                         out_channels=128, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_4 = conv2d.TiledConv2d(in_channels=128, 
                                         out_channels=128, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         )
 
@@ -48,20 +48,20 @@ class Net(nn.Module):
         self.conv2d_5 = conv2d.TiledConv2d(in_channels=128, 
                                   out_channels=256, 
                                   kernel_size=(Kh,Kw),
-                                  bias = False,
+                                  # bias = False,
                                   padding=(Ph,Pw),
                                   )  
 
         self.conv2d_6 = conv2d.TiledConv2d(in_channels=256, 
                                         out_channels=256, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         ) 
         self.conv2d_7 = conv2d.TiledConv2d(in_channels=256, 
                                         out_channels=256, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.mxp3 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
@@ -69,19 +69,19 @@ class Net(nn.Module):
         self.conv2d_8 = conv2d.TiledConv2d(in_channels=256, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_9 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_10 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         )
 
@@ -90,87 +90,77 @@ class Net(nn.Module):
         self.conv2d_11 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_12 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         )
         self.conv2d_13 = conv2d.TiledConv2d(in_channels=512, 
                                         out_channels=512, 
                                         kernel_size=(Kh,Kw),
-                                        bias = False,
+                                        # bias = False,
                                         padding=(Ph,Pw),
                                         )
 
-        self.mxp5 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
-        self.relu = relu.cReLu()        
-        # in_feature = 512*oH*oW
-        # self.flat = nn.Flatten()
-        # self.fc1 = nn.Linear(in_feature, 4096, bias=False)  # 2G word even for 1kx1k  | 200G word or 10Kx10K. No GPU works
-        # self.fc2 = nn.Linear(4096, 4096, bias=False)
-        # self.fc3 = nn.Linear(4096, 1000, bias=False)
+        #self.mxp5 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
+        self.relu = relu.cReLu()   
 
 
-        self.avgp = nn.AvgPool2d(oH, stride=1)
-        self.flat = nn.Flatten()
-        in_feature = 512
-        self.fc1 = nn.Linear(in_feature, 1024, bias=False)
+        self.avgp = gavgpool2d.cGAvgPool2d()
         self.sft = nn.Softmax(dim=-1)
 
         self.tsplit = tilesplit.TiledSplit()
         self.tcopy = tilecopy.TiledCopy()
-        # self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2, self.mxp1, \
-        #                                         self.conv2d_3,  self.conv2d_4, self.mxp2,  \
-        #                                         self.conv2d_5, self.conv2d_6, self.conv2d_7, self.mxp3, \
-        #                                         self.conv2d_8, self.conv2d_9, self.conv2d_10, self.mxp4, \
-        #                                         self.conv2d_11, self.conv2d_12, self.conv2d_13, self.mxp5,  
-        #                                         ]) #
+
         self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.relu, self.conv2d_2, self.relu,self.mxp1, \
                                                 self.conv2d_3, self.relu, self.conv2d_4, self.relu, self.mxp2,  \
                                                 self.conv2d_5, self.relu, self.conv2d_6, self.relu, self.conv2d_7, self.relu, self.mxp3, \
                                                 self.conv2d_8, self.relu, self.conv2d_9, self.relu, self.conv2d_10, self.relu, self.mxp4, \
-                                                self.conv2d_11, self.relu, self.conv2d_12, self.relu, self.conv2d_13, self.relu, self.mxp5,   ]) #
+                                                self.conv2d_11, self.relu, self.conv2d_12, self.relu, self.conv2d_13, self.avgp]) #
         
-    # static  out_temp =None
-    def forward(self, x, H, W, nTh, nTw):
-        #nTh, nTw -- num of tiles in H,W
+        self.classifier = nn.Sequential(
+            nn.Linear(512*gpool_size*gpool_size,num_classes),
+            nn.Softmax(dim=1),
+        )
+
+
+    # I need input shape and #tiles
+    def forward(self, x: torch.Tensor, N, C, H, W, nTh, nTw) -> torch.Tensor:
         model_device = next(self.parameters()).device
-        N, C, oH, oW, shape_dict = shape_infer.shape_infer_sequence(self.block1, H, W, batch, chanel)
-        # print("!!!!!!!", N, C, oH, oW)
+        N, C, oH, oW, shape_dict = shape_infer.shape_infer_sequence(self.block1, H, W, N, C)
+        #x.requires_grad = True
         stream_structure = self.block1
 
-        out = torch.zeros(N, C, oH, oW, requires_grad=True).cuda()
-        #print("out shape", out.size())
+        # alloc final output of checkpoint segment.
+        out = torch.zeros(N, C, oH, oW, requires_grad=True).to(model_device)
+        print("!!!!!!!", out.size())
+        print("input shape", x.size())
+        # print("nTh nTw", nTh, nTw)
+
         for i in range(0,nTh): 
             for j in range(0,nTw):
-                # coord = [i,j]
-                # print("coord", coord)
+                coord = [i,j]
+                print("coord", coord)
+                # print("loop ...", out[0,0,0,0],  model_device_local)
                 input_shape = (N,C,H,W)
                 output_shape = (N,C,oH,oW)
-                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
-    
-                #print("++++++++++++++++++++++++++++++++++++++++++++++++")
-                out_temp = checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
+                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict,  model_device)
+                
+                #print("info", info[1][-11].model_device)
+                # # have to accumulate here otherwise no bp.
+                out += checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
+                # temp = self.block1( x, info, stream_structure[1], model_device_local, [nTh, nTw])
+                # print("temp ", temp[0,0,0,0], out[0,0,0,0])
+                # out += temp
 
-                # use customized copy
-                fake_pi = info[0][-11]
-                tile_shape = fake_pi.cur_output_shape
-                tile_size = [tile_shape[0], tile_shape[1]]
-                output_index = fake_pi.input_slice
-                #print(tile_shape, tile_size, output_index)
-                out = self.tcopy(out_temp, out, output_index, tile_size)
-                del out_temp
-                del info
-
-        out = self.avgp(out)
-        out = self.flat(out)
-        out = self.fc1(out)
-        out = self.sft(out)
+        out = torch.flatten(out, 1)
+        out = self.classifier(out)
         return out
+
 
 def main():
     torch.set_printoptions(profile="full")
@@ -204,13 +194,13 @@ def main():
         labels = torch.rand(batch, 1024).cuda()
 
         local_start = time.time() 
-        out = model(input, H, W, nTh, nTw )
+        out = model(input, 1, 3, H, W, nTh, nTw )
         # torch.cuda.synchronize()
         # ref_fwd_done = time.time()
         # ref_elapsed_fwd += (ref_fwd_done - local_start)
 
 
-        # print("==== ref_fwd done ...")
+        print("==== fwd done ...")
         # ref_fwd_use = memUsage.currentValue()-our_initmem
         # print(memory.MemSize(ref_fwd_use) )    
         # print("avail ref",memUsage.available())
@@ -225,7 +215,7 @@ def main():
     
     torch.cuda.synchronize()    
     ref_elapsed_total = time.time() - start_time
-    #print("done ref bkw")
+    print("done ref bkw")
     print("\n&& {}\n".format(ref_elapsed_total) )
     
 
@@ -251,10 +241,9 @@ if __name__=="__main__":
 
 
 
-    H = 32
-    W = H
-    oH = H//32
-    oW = W//32
-    nTh = 2
+    H = 30*1024
+    W = 30*1024
+   
+    nTh = 30
     nTw = nTh
     main()

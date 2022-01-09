@@ -17,6 +17,8 @@ class TiledSplitFunction(torch.autograd.Function):
         ctx.input_is_cuda = x.is_cuda
         ctx.info = info
         ctx.big_infput_shape = x.size()
+        ctx.model_device = model_device
+        # print("[split fwd] input_is_cuda ?? ", ctx.input_is_cuda)
         
         input = padding_calc.get_input_tile(info[0], x, first_op_in_seg)
         
@@ -43,7 +45,7 @@ class TiledSplitFunction(torch.autograd.Function):
         coord = b_info.input_slice
         big_grad_in = None
         #print("tsplit tile coor bkw", tile_coord)
-        # print(ctx.num_tile)
+        # print("[split bkw] ctx.input_is_cuda ?? ", ctx.input_is_cuda)
         
         if ctx.input_is_cuda:
             # create a cuda-tensor
@@ -51,7 +53,7 @@ class TiledSplitFunction(torch.autograd.Function):
             C = ctx.big_infput_shape[1]
             H = ctx.big_infput_shape[2]
             W = ctx.big_infput_shape[3]
-            big_grad_in = torch.zeros(N, C, H, W).cuda()
+            big_grad_in = torch.zeros(N, C, H, W).to(ctx.model_device)
             big_grad_in[:,:, coord[2]:coord[3]+1, coord[0]:coord[1]+1] = grad_output[:,:,0:H//ctx.num_tile[0], 0:W//ctx.num_tile[1]]
 # if it a very begining input, we do not necessarily to pass it back.
         # else:
