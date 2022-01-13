@@ -313,12 +313,16 @@ class TiledConv2dFunction(torch.autograd.Function):
 
 
                 #    print("== tiled conv2d backward / compute grad_weight done") 
-                
                 else:
                     print("using naive cuda bkw")
             else:
                 print("using cpu bkw")
             # print("##############return grad_in in conv2d", grad_input[0,0,0,0:10])
+
+            del myctx.input
+            del myctx.weight
+            del myctx.info
+
             return grad_input, grad_weight, grad_bias, None, None, None, None, None, None, None, None
         else: 
             f_info = ctx.info[0][ctx.uniq_id]

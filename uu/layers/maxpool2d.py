@@ -9,6 +9,7 @@ import pdb
 from uu.utils import correctness_check 
 from uu.utils.context_control import maxpool_2d_ctx
 
+from uu.utils import memory 
 
 myctx_dict = {}
 #for correctness debug 
@@ -26,6 +27,11 @@ class cMaxPool2dFunction(torch.autograd.Function):
         #ctx.info = inputs[4]
         uniq_id = inputs[5]
         is_ccheckpoint = inputs[6]
+        ctx.model_device = inputs[7]
+
+
+        # #mem debug
+        # memUsage = memory.MeasureMemory(ctx.model_device)
 
         if USE_DEFAULT_CTX:
             #print("Using USE_DEFAULT_CTX")
@@ -52,6 +58,10 @@ class cMaxPool2dFunction(torch.autograd.Function):
                 myctx = maxpool_2d_ctx()
 
             if not is_ccheckpoint:
+                # print("==== **  before not is_ccheckpoint ...")
+                # innermem = memUsage.currentValue()
+                # print("de {} Mem {} UntilMax{}".format(ctx.model_device, memory.MemSize(innermem), memUsage.maxx())  )
+
                 out = F.max_pool2d(input, kernel_size, stride, padding, return_indices=True)
                 out_value = out[0]
                 out_index = out[1]
@@ -64,6 +74,11 @@ class cMaxPool2dFunction(torch.autograd.Function):
                 # del(myctx.input) 
                 myctx.input = input
                 myctx.arg_max = out_index
+
+                # print("==== **  after myctx ...")
+                # innermem = memUsage.currentValue()
+                # print("de {} Mem {} UntilMax{}".format(ctx.model_device, memory.MemSize(innermem), memUsage.maxx())  )
+
                 del out
             else:
                 out = F.max_pool2d(input, kernel_size, stride, padding, return_indices=True)
@@ -105,13 +120,16 @@ class cMaxPool2dFunction(torch.autograd.Function):
             
             return grad_in, None, None, None, None, None, None
         else:
-            # print("\n^^^^^cMaxPool2dFunction bwd")
+            #print("\n^^^^^cMaxPool2dFunction bwd")
+
             # #case1
             # if ctx.input.is_cuda:
             #     grad_in = maxpool_2d_bkw_cuda.backward(grad_output, ctx.input, ctx.kernel_size, ctx.stride, ctx.padding, (1,1), False, ctx.arg_max)
             # else:
             #     grad_in = maxpool_2d_bkw_cpp.backward(grad_output, ctx.input, ctx.kernel_size, ctx.stride, ctx.padding, (1,1), False, ctx.arg_max)
-            
+            #mem debug
+            #memUsage = memory.MeasureMemory(ctx.model_device)
+
             myctx = myctx_dict[ctx.uniq_id]
 
             # print("myctx input size", myctx.input[0,0,0,0:10])
@@ -134,10 +152,26 @@ class cMaxPool2dFunction(torch.autograd.Function):
             else:
                 grad_in = torch._C._nn.max_pool2d_with_indices_backward(grad_output, myctx.input, myctx.kernel_size, myctx.stride, myctx.padding, (1,1), False, myctx.arg_max)
         
+            # print("==== **  after cMaxPool2dFunction bkw ...")
+            # print('dic', myctx_dict.keys())
+            # innermem = memUsage.currentValue()
+            # print("de {} Mem {} UntilMax{}".format(ctx.model_device, memory.MemSize(innermem), memUsage.maxx())  )
+
+
+            del myctx.input
+            del myctx.arg_max
+            del myctx.info
+
+
+            # print("==== **  after deleting ...")
+            # innermem = memUsage.currentValue()
+            # print("de {} Mem {} UntilMax{}".format(ctx.model_device, memory.MemSize(innermem), memUsage.maxx())  )
+            
+            
             # print("##############grad_in in maxp", grad_in.size()) 
             # print("grad in", grad_in)
-            torch.cuda.empty_cache()
-            return grad_in, None, None, None, None, None, None
+            # torch.cuda.empty_cache()
+            return grad_in, None, None, None, None, None, None, None
         
     
 class cMaxPool2d(_MaxPoolNd):
@@ -169,15 +203,16 @@ class cMaxPool2d(_MaxPoolNd):
         cmaxplool = cMaxPool2dFunction.apply
         uniq_id = id(self)
         pi = info[0][uniq_id]
+        model_device = info[1][-11].model_device
         
         if pi.op_idex == 0: # last stage in the segment or in the global network
             out = cmaxplool(input, self.kernel_size, self.stride,
-                            self.padding, info, uniq_id, is_ccheckpoint)
+                            self.padding, info, uniq_id, is_ccheckpoint, model_device)
             #print ("mxp FF", out.size())
             return out
         else:
             next_input = cmaxplool(input, self.kernel_size, self.stride,
-                            self.padding, info, uniq_id, is_ccheckpoint)
+                            self.padding, info, uniq_id, is_ccheckpoint, model_device)
             #print ("* mxp FF", next_input.size())
             return next_input, info, self.is_ccheckpoint
 
