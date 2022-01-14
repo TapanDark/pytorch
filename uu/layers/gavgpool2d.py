@@ -109,7 +109,7 @@ class cGAvgPool2dFunction(torch.autograd.Function):
                 # none-last tile return None
                 num_of_element = non_disjoint_tile_size_h*nTh * non_disjoint_tile_size_w*nTw
                 ctx.num_of_element = num_of_element
-                fake_out = torch.zeros(partial_sums_tile[0].size(), requires_grad=True).to(inputs[4])
+                fake_out = torch.zeros(partial_sums_tile[0].size(), requires_grad=True).to(ctx.model_device)
                 fake_out = fake_out[:, :, None,None]
                 #print("fake size", fake_out.size())
                 return fake_out

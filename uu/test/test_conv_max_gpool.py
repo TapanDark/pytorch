@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.cuda import init
 from uu.utils import shape_infer 
 from uu.utils import padding_calc
-from uu.layers import maxpool2d, conv2d, sequential, tilesplit, tilecopy, relu, gavgpool2d
+from uu.layers import maxpool2d, conv2d, sequential, tilesplit, tilecopy, relu, gavgpool2d, gmaxpool2d
 from torch.nn.parameter import Parameter
 from uu.utils import correctness_check 
 from uu.utils import memory 
@@ -47,6 +47,7 @@ class Net_ref(nn.Module):
                                 
         self.maxpool1 = nn.MaxPool2d((2,2), (2,2))
         self.avgp = nn.AdaptiveAvgPool2d((1, 1))
+        self.maxgp = nn.AdaptiveMaxPool2d((1, 1))
         self.sft = nn.Softmax(dim=-1)
 
         self.conv2d_1.weight = Parameter(w1)
@@ -65,7 +66,7 @@ class Net_ref(nn.Module):
     def forward(self, x):
         out = self.block1(x)
         #print("out.shape 1 ", out.size(), out)
-        out = self.avgp(out)
+        out = self.maxgp(out)
         print("out.shape 2 ", out.size(), out)
         # out = self.sft(out)
         # print("out.shape final", out.size(), out)
@@ -78,24 +79,25 @@ class Net(nn.Module):
         self.conv2d_1 = conv2d.TiledConv2d(in_channels=chanel, 
                                   out_channels=chanel, 
                                   kernel_size=(Kh,Kw),
-                                  bias = True,
+                                  bias = False,
                                   padding=(Ph,Pw),
                                   )  
 
         self.conv2d_2 = conv2d.TiledConv2d(in_channels=chanel, 
                                         out_channels=chanel, 
                                         kernel_size=(Kh,Kw),
-                                        bias = True,
+                                        bias = False,
                                         padding=(Ph,Pw),
                                         ) 
         self.mxp1 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
-        self.avgp = gavgpool2d.cGAvgPool2d()
+        #self.avgp = gavgpool2d.cGAvgPool2d()
+        self.gmaxp = gmaxpool2d.cGMaxPool2d()
         self.sft = nn.Softmax(dim=-1)
 
         self.tsplit = tilesplit.TiledSplit()
         self.tcopy = tilecopy.TiledCopy()
 
-        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2, self.mxp1, self.avgp]) #
+        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2, self.mxp1, self.gmaxp]) #
         
     # static  out_temp =None
     def forward(self, x, H, W, nTh, nTw):
@@ -115,10 +117,11 @@ class Net(nn.Module):
                 print("coord", coord)
                 input_shape = (N,C,H,W)
                 output_shape = (N,C,oH,oW)
-                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
+                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict, model_device)
                
-                #out += self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
-                out += checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
+                out += self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
+                #print("out", out.size(), out)
+                #out += checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
 
                 # if out_temp is not None:
                 #     print("out tile", out_temp.size(), out_temp)
@@ -126,7 +129,7 @@ class Net(nn.Module):
 
         #out = out_temp
         #out = self.sft(out)
-        print("out", out.size(), out)
+        
         return out
 
 
@@ -154,13 +157,21 @@ def main():
 
 
     out = model(input, H, W, nTh, nTw )
-    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
-    # print("~~ check forward correctness ~~")
-    # correctness_check.check_equal(out, out_ref, False)
-    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+
+    
 
 
-    out.sum().backward()
+    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    print("~~ check forward correctness ~~")
+    print("out ref ", out_ref)
+    print("out  ", out)
+
+
+    correctness_check.check_equal(out, out_ref, False)
+    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+
+
+    # out.sum().backward()
 
 
     # print("#### compare w1")

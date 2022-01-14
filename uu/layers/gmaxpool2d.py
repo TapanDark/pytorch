@@ -2,6 +2,7 @@ import torch
 from  torch.nn.modules.pooling import _MaxPoolNd
 from torch.nn import functional as F
 from torch.nn.common_types import _size_2_t
+from typing import List, Optional
 
 from uu.utils import correctness_check 
 
@@ -16,64 +17,127 @@ class MMctx:
         self.info = None
         self.arg_max = None
 
+USE_DEFAULT_CTX = True
 myctx_dict = {}
-
-partial_sums_tile = []
+partial_max_tile = []
+BK_FLAG = False
+FINAL_res = None
+FINAL_ind = None
 
 class cGMaxPool2dFunction(torch.autograd.Function):
     # create a static variable
     @staticmethod
     def forward(ctx, *inputs):
-        #print("\n^^^^^cMaxPool2dFunction fwd")
+        print("\n^^^^^cGmaxPool2dFunction fwd")
+        global BK_FLAG
+        global FINAL_res
+        global FINAL_ind
         input = inputs[0]   # tiled input Do we need to get dijoint part??
-        kernel_size = inputs[1]
+        #kernel_size = inputs[1]
         stride = inputs[2]
         padding = inputs[3]
-        cinfo = inputs[4] # current info
-        ctx.info = cinfo
+        info = inputs[4] # current info
+        ctx.info = info
         uniq_id = inputs[5]
         is_ccheckpoint = inputs[6]
+        ctx.model_device = inputs[7]
 
-        print(cinfo.coord)
-        print(cinfo.numof_tiles)
+        f_info = info[0][uniq_id]
+        b_info = info[1][uniq_id]
+
+        if USE_DEFAULT_CTX and not BK_FLAG:
+            ctx.uniq_id = uniq_id
+            b = input.size()[0]
+            c = input.size()[1]
+            h = input.size()[2]
+            w = input.size()[3]
+            ctx.b = b
+            ctx.c = c
+            ctx.h = h
+            ctx.w = w
+            coord_h = f_info.coord[0]
+            coord_w = f_info.coord[1]
+            nTh = f_info.numof_tiles[0]
+            nTw = f_info.numof_tiles[1]
+
+            # for input view non_disjoint
+            previous_op_id = b_info.next_id
+            pre_f_info = info[0][previous_op_id]
+
+            non_disjoint_tile_size_h = pre_f_info.non_disjoint_tile_size[0]
+            non_disjoint_tile_size_w = pre_f_info.non_disjoint_tile_size[1]
+
+            dim_tp = (len(input.size())-2, len(input.size())-1)
+            # extract non-disjoint
+            fake_pi = info[0][-11]
+            # tile_shape = fake_pi.cur_output_shape
+            # tile_size = [tile_shape[0], tile_shape[1]]
+            input_index = fake_pi.input_slice
+
+            non_disj_index_h_b = coord_h*non_disjoint_tile_size_h
+            non_disj_index_h_e = non_disj_index_h_b + non_disjoint_tile_size_h - 1
+            non_disj_index_w_b = coord_w*non_disjoint_tile_size_w
+            non_disj_index_w_e = non_disj_index_w_b + non_disjoint_tile_size_w - 1
+            #non_disj_index = [non_disj_index_w_b, non_disj_index_w_e, non_disj_index_h_b, non_disj_index_h_e] #(l,r,t,b) 
+
+            #relative offset
+            l = abs(non_disj_index_w_b-input_index[0])
+            r = abs(non_disj_index_w_e-input_index[1])
+            t = abs(non_disj_index_h_b-input_index[2])
+            b = abs(non_disj_index_h_e-input_index[3])
+            in_tile_h = input.size()[2]
+            in_tile_w = input.size()[3]
+
+            # disjoint view of input:= input[:,:, t:in_tile_h-b, l:in_tile_w-r]
+            #TODO: is checkpoint????
+            input_disjoint = input[:,:, t:in_tile_h-b, l:in_tile_w-r]
 
 
-        coord_h = cinfo.coord[0]
-        coord_w = cinfo.coord[1]
-        nTh = cinfo.numof_tiles[0]
-        nTw = cinfo.numof_tiles[1]
-
-        # have to find the info from previous op
-        non_disjoint_tile_size_h = cinfo.non_disjoint_tile_size[0]
-        non_disjoint_tile_size_w = cinfo.non_disjoint_tile_size[1]
-        
-
-        # sum all tile piece elements:
-        dim_tp = (len(input.size())-2, len(input.size())-1)
-        current_sum_overhw = input.sum(dim=dim_tp)
-        partial_sums_tile.append(current_sum_overhw)
-
-        if coord_h == nTh-1 and coord_w == nTw-1:
-            # get all tiles partial sum
-            assert(len(partial_sums_tile) == nTh*nTw)
-            accum = partial_sums_tile[0]
-            # accumlate all partial sum
-            for i in range(1, len(partial_sums_tile)):
-                accum += partial_sums_tile[i]
-            
-            # averaging 
-            # non-tiled input shape of Maxpool
-            input_size = [non_disjoint_tile_size_h*nTh, non_disjoint_tile_size_w*nTw]
-            num_of_element = non_disjoint_tile_size_h*nTh * non_disjoint_tile_size_w*nTw
-            out_value = accum / num_of_element 
-            return out_value # tensor
-        else:
-            # none-last tile return None
-            return None
+            # print("l, r, t, b", l, r, t, b)
+            print("input_disjoint ext ", input_disjoint[:,:, t:in_tile_h-b, l:in_tile_w-r].size())
 
 
-        
-        
+
+            # local tile do gloable maxpool, kernel size == h,w extend
+            kernel_size = (input_disjoint.size()[2], input_disjoint.size()[2])
+            out = F.max_pool2d(input_disjoint, kernel_size, stride, padding, return_indices=True)
+            out_value = out[0]
+            out_index = out[1]
+
+            print("kernel_size ",kernel_size)
+            print("out_value ",out_value)
+            print("out_index ",out_index)
+
+            # store temp (space is 2 element per tile)
+            partial_max_tile.append([out_value, out_index] )
+
+            if coord_h == nTh-1 and coord_w == nTw-1:
+                # get all tiles partial sum
+                BK_FLAG = True
+                assert(len(partial_max_tile) == nTh*nTw)
+                maxmax = partial_max_tile[0][0]
+                maxindex = partial_max_tile[0][1]
+                # accumlate all partial sum
+                for i in range(1, len(partial_max_tile)):
+                    # select the largest among all partial max
+                    # have to comapre each B and each C
+                    for itr_b in range(ctx.b):
+                        for itr_c in range(ctx.c):
+                            if partial_max_tile[i][0][itr_b][itr_c][0][0] > maxmax[itr_b][itr_c][0][0]:
+                                maxmax[itr_b][itr_c][0][0] = partial_max_tile[i][0][itr_b][itr_c][0][0]
+                                maxindex[itr_b][itr_c][0][0] = partial_max_tile[i][1][itr_b][itr_c][0][0]
+                
+                FINAL_res = maxmax
+                FINAL_ind = maxindex
+                return maxmax # tensor
+            else:
+                # if not the last tile, return fake 0 tensor
+                fake_out = torch.zeros(partial_max_tile[0][0].size(), requires_grad=True).to(ctx.model_device)
+                # print("partial_max_tile[0][0] size", partial_max_tile[0][0].size())
+                # print("fake size", fake_out.size())
+                return fake_out
+
+
     
     # @staticmethod
     # def backward(ctx, grad_output):
@@ -117,7 +181,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
 
 
 class cGMaxPool2d(_MaxPoolNd):
-    def __init__(self, kernel_size: _size_2_t, stride: _size_2_t = None,
+    def __init__(self, kernel_size: Optional[_size_2_t] = None, stride: Optional[_size_2_t] = None,
                  padding: _size_2_t = (0,0), dilation: _size_2_t = 1,
                  return_indices: bool = False, ceil_mode: bool = False,
                  is_ccheckpoint = False, #mdepth = 1, num_maxp = 1
@@ -144,12 +208,13 @@ class cGMaxPool2d(_MaxPoolNd):
         cgMaxplool = cGMaxPool2dFunction.apply
         uniq_id = id(self)
         pi = info[0][uniq_id]
+        model_device = info[1][-11].model_device
 
 
         # Gppoling must be the last op in a checkpoint segment
         assert (pi.op_idex == 0)
         out = cgMaxplool(input, self.kernel_size, self.stride,
-                        self.padding, info, uniq_id, is_ccheckpoint)
+                        self.padding, info, uniq_id, is_ccheckpoint, model_device)
         #print ("mxp FF", out.size())
         return out
        
