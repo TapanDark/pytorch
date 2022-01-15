@@ -118,38 +118,60 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             partial_max_tile.append([out_value, out_index, (coord_h, coord_w)] )
 
             if coord_h == nTh-1 and coord_w == nTw-1:
-                # get all tiles partial sum
-                META_tile = numpy.zeros((ctx.b, ctx.c, nTh, nTw)) # layout specified
+                
+                # META_tile / FINAL_ind  should be an [B][C][List]
+                META_tile = numpy.empty((ctx.b, ctx.c),dtype=object)
+                #FINAL_ind = numpy.empty((ctx.b, ctx.c),dtype=object)
+
                 BK_FLAG = True # it must be the end of the FWD pass, so set the flag to avoid recomputation
                 assert(len(partial_max_tile) == nTh*nTw)
                 maxmax = partial_max_tile[0][0]
-                maxindex = partial_max_tile[0][1]
+                # maxindex = partial_max_tile[0][1]
                 hh = partial_max_tile[0][2][0]  
                 ww = partial_max_tile[0][2][1]
                 max_h_w = [hh, ww]
+               
 
                 for itr_b in range(ctx.b):
                     # select the largest among all partial max
                     # have to comapre each B and each C
                     for itr_c in range(ctx.c):
-                        for i in range(1, len(partial_max_tile)):
-                            # first 2 index locates the tile; 
-                            if partial_max_tile[i][0][itr_b][itr_c][0][0] >= maxmax[itr_b][itr_c][0][0]:
-                                maxmax[itr_b][itr_c][0][0] = partial_max_tile[i][0][itr_b][itr_c][0][0]
-                                maxindex[itr_b][itr_c][0][0] = partial_max_tile[i][1][itr_b][itr_c][0][0]
+                        for i in range(0, len(partial_max_tile)):
+                            print("i ", i)
+                            # init
+                            if i == 0:
+                                META_tile[itr_b][itr_c] = []
+                                maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
+                                META_tile[itr_b][itr_c].append( (max_h_w, maxindi) )
+                            else:
+                                # first 2 index locates the tile; 
+                                if partial_max_tile[i][0][itr_b][itr_c][0][0] > maxmax[itr_b][itr_c][0][0]:
+                                    maxmax[itr_b][itr_c][0][0] = partial_max_tile[i][0][itr_b][itr_c][0][0]
+                                    maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
 
-                                #print("tt ", type(maxmax[itr_b][itr_c][0][0]), type( maxindex[itr_b][itr_c][0][0]))
-                                # replacing largest t_h and t_w
-                                hh = partial_max_tile[i][2][0]  
-                                ww = partial_max_tile[i][2][1]
-                                # TODO: logic to handle overlapped region max
-                                max_h_w[0] = hh
-                                max_h_w[1] = ww
+                                    print("abs large ")
+                                    # replacing largest t_h and t_w
+                                    hh = partial_max_tile[i][2][0]  
+                                    ww = partial_max_tile[i][2][1]
 
-                        # final set for this plane
-                        META_tile[itr_b][itr_c][max_h_w[0]][max_h_w[1]] = 1                        
+                                    # need to clean up buffer
+                                    META_tile[itr_b][itr_c].clear()
+                                    meta_inf = ([hh,ww], maxindi)
+                                    META_tile[itr_b][itr_c].append(meta_inf)
+                                    print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
+                                elif partial_max_tile[i][0][itr_b][itr_c][0][0] == maxmax[itr_b][itr_c][0][0]:
+                                    print("equal caching ")
+                                    maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
+                                    hh = partial_max_tile[i][2][0]  
+                                    ww = partial_max_tile[i][2][1]
+                                    # need to also put it in the 
+                                    meta_inf = ([hh,ww], maxindi)
+                                    META_tile[itr_b][itr_c].append(meta_inf)
+                                    print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
+
+
                 FINAL_res = maxmax
-                FINAL_ind = maxindex
+                #FINAL_ind = maxindex
                 return maxmax # tensor
             else:
                 # if not the last tile, return fake 0 tensor
@@ -175,16 +197,14 @@ class cGMaxPool2dFunction(torch.autograd.Function):
 
             ctx.coord_h = coord_h
             ctx.coord_w = coord_w
-
-
             return FINAL_res
 
 
-    
     @staticmethod
     def backward(ctx, grad_output):
         print("\n^^^^^cGGMaxPool2dFunction bwd")
         print("grad_output", grad_output.size())
+        print("META_tile", META_tile)
         if USE_DEFAULT_CTX:
             f_info = ctx.info[0][ctx.uniq_id]
             b = ctx.b
@@ -200,18 +220,19 @@ class cGMaxPool2dFunction(torch.autograd.Function):
 
                 for i in range(0,b):
                     for j in range (0,c):
-                        if META_tile[i][j][ctx.coord_h][ctx.coord_w] == 1:
-                            # if the current tile contains the maxmax, restore back
-                            print("large tile at {}{} - {} {}".format(i, j, ctx.coord_h, ctx.coord_w))
-                            indi = FINAL_ind[i][j][0][0]
-                            print(type(indi.item()), type(w))
-                            
-                            max_position_w = indi.item()  % w
-                            max_position_h = indi.item()  // w
+                        for pp in META_tile[i][j]:
+                            if pp[0][0] == ctx.coord_h and pp[0][1] == ctx.coord_w:
+                                # if the current tile contains the maxmax, restore back
+                                print("large tile at {}{} - {} {}".format(i, j, ctx.coord_h, ctx.coord_w))
+                                indi = pp[1]
+                                print(type(indi.item()), type(w))
+                                
+                                max_position_w = indi.item()  % w
+                                max_position_h = indi.item()  // w
 
-                            print("indi {} {} {} {}".format(indi,w, max_position_h, max_position_w))
-                            grad_in[i][j][max_position_h][max_position_w] = grad_output[i,j]
-      
+                                print("indi {} {} {} {}".format(indi,w, max_position_h, max_position_w))
+                                grad_in[i][j][max_position_h][max_position_w] = grad_output[i,j]
+        
         return grad_in, None, None, None, None, None, None, None
         
         
