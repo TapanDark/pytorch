@@ -17,7 +17,7 @@ import time
 
 myctx_dict = {}
 #for correctness debug 
-USE_DEFAULT_CTX = False
+USE_DEFAULT_CTX = True
 
 class TiledConv2dFunction(torch.autograd.Function):
     @staticmethod

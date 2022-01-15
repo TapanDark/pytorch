@@ -171,15 +171,15 @@ def main():
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
 
-    # out.sum().backward()
+    out.sum().backward()
 
 
-    # print("#### compare w1")
-    # correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
+    print("#### compare w1")
+    correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
 
-    # print("#### compare w2")
-    # correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
-
+    print("#### compare w2")
+    correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
+    print(model_ref.conv2d_2.weight.grad)
 
 
 
@@ -189,13 +189,13 @@ if __name__=="__main__":
     Kw = 3
     Ph = 1
     Pw = 1
-    chanel = 3
+    chanel = 2
     batch = 1
 
 
 
-    H = 256
-    W = 256
+    H = 16
+    W = 16
     oH = H//2
     oW = W//2
     nTh = 2

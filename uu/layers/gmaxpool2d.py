@@ -5,7 +5,8 @@ from torch.nn.common_types import _size_2_t
 from typing import List, Optional
 
 from uu.utils import correctness_check 
-
+import numpy
+import math
 
 class MMctx:
     def __init__(self):
@@ -21,8 +22,10 @@ USE_DEFAULT_CTX = True
 myctx_dict = {}
 partial_max_tile = []
 BK_FLAG = False
+
 FINAL_res = None
 FINAL_ind = None
+META_tile = None
 
 class cGMaxPool2dFunction(torch.autograd.Function):
     # create a static variable
@@ -32,6 +35,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
         global BK_FLAG
         global FINAL_res
         global FINAL_ind
+        global META_tile
         input = inputs[0]   # tiled input Do we need to get dijoint part??
         #kernel_size = inputs[1]
         stride = inputs[2]
@@ -55,78 +59,95 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             ctx.c = c
             ctx.h = h
             ctx.w = w
+            
             coord_h = f_info.coord[0]
             coord_w = f_info.coord[1]
+            ctx.coord_h = coord_h
+            ctx.coord_w = coord_w
             nTh = f_info.numof_tiles[0]
             nTw = f_info.numof_tiles[1]
 
             # for input view non_disjoint
-            previous_op_id = b_info.next_id
-            pre_f_info = info[0][previous_op_id]
+            # previous_op_id = b_info.next_id
+            # pre_f_info = info[0][previous_op_id]
 
-            non_disjoint_tile_size_h = pre_f_info.non_disjoint_tile_size[0]
-            non_disjoint_tile_size_w = pre_f_info.non_disjoint_tile_size[1]
+            # non_disjoint_tile_size_h = pre_f_info.non_disjoint_tile_size[0]
+            # non_disjoint_tile_size_w = pre_f_info.non_disjoint_tile_size[1]
 
-            dim_tp = (len(input.size())-2, len(input.size())-1)
-            # extract non-disjoint
-            fake_pi = info[0][-11]
+            # dim_tp = (len(input.size())-2, len(input.size())-1)
+            # # extract non-disjoint
+            # fake_pi = info[0][-11]
             # tile_shape = fake_pi.cur_output_shape
             # tile_size = [tile_shape[0], tile_shape[1]]
-            input_index = fake_pi.input_slice
+            # input_index = fake_pi.input_slice
 
-            non_disj_index_h_b = coord_h*non_disjoint_tile_size_h
-            non_disj_index_h_e = non_disj_index_h_b + non_disjoint_tile_size_h - 1
-            non_disj_index_w_b = coord_w*non_disjoint_tile_size_w
-            non_disj_index_w_e = non_disj_index_w_b + non_disjoint_tile_size_w - 1
+            # non_disj_index_h_b = coord_h*non_disjoint_tile_size_h
+            # non_disj_index_h_e = non_disj_index_h_b + non_disjoint_tile_size_h - 1
+            # non_disj_index_w_b = coord_w*non_disjoint_tile_size_w
+            # non_disj_index_w_e = non_disj_index_w_b + non_disjoint_tile_size_w - 1
             #non_disj_index = [non_disj_index_w_b, non_disj_index_w_e, non_disj_index_h_b, non_disj_index_h_e] #(l,r,t,b) 
 
             #relative offset
-            l = abs(non_disj_index_w_b-input_index[0])
-            r = abs(non_disj_index_w_e-input_index[1])
-            t = abs(non_disj_index_h_b-input_index[2])
-            b = abs(non_disj_index_h_e-input_index[3])
-            in_tile_h = input.size()[2]
-            in_tile_w = input.size()[3]
+            # l = abs(non_disj_index_w_b-input_index[0])
+            # r = abs(non_disj_index_w_e-input_index[1])
+            # t = abs(non_disj_index_h_b-input_index[2])
+            # b = abs(non_disj_index_h_e-input_index[3])
+            # in_tile_h = input.size()[2]
+            # in_tile_w = input.size()[3]
 
             # disjoint view of input:= input[:,:, t:in_tile_h-b, l:in_tile_w-r]
             #TODO: is checkpoint????
-            input_disjoint = input[:,:, t:in_tile_h-b, l:in_tile_w-r]
-
-
+            #input_disjoint = input[:,:, t:in_tile_h-b, l:in_tile_w-r]
+            ## TODO:?? I think no disjoint need here for maxp
             # print("l, r, t, b", l, r, t, b)
-            print("input_disjoint ext ", input_disjoint[:,:, t:in_tile_h-b, l:in_tile_w-r].size())
-
-
-
+            # print("input_disjoint ext ", input_disjoint[:,:, t:in_tile_h-b, l:in_tile_w-r].size())
             # local tile do gloable maxpool, kernel size == h,w extend
-            kernel_size = (input_disjoint.size()[2], input_disjoint.size()[2])
-            out = F.max_pool2d(input_disjoint, kernel_size, stride, padding, return_indices=True)
+            # kernel_size = (input_disjoint.size()[2], input_disjoint.size()[2])
+
+
+            print("input size", input.size(), input)
+            out = F.max_pool2d(input, (h,w), stride, padding, return_indices=True)
             out_value = out[0]
             out_index = out[1]
 
-            print("kernel_size ",kernel_size)
-            print("out_value ",out_value)
-            print("out_index ",out_index)
+            #print("kernel_size ",kernel_size)
+            print("out_value ",out_value, out_value.size())
+            print("out_index ",out_index, out_index.size())
 
             # store temp (space is 2 element per tile)
-            partial_max_tile.append([out_value, out_index] )
+            partial_max_tile.append([out_value, out_index, (coord_h, coord_w)] )
 
             if coord_h == nTh-1 and coord_w == nTw-1:
                 # get all tiles partial sum
-                BK_FLAG = True
+                META_tile = numpy.zeros((ctx.b, ctx.c, nTh, nTw)) # layout specified
+                BK_FLAG = True # it must be the end of the FWD pass, so set the flag to avoid recomputation
                 assert(len(partial_max_tile) == nTh*nTw)
                 maxmax = partial_max_tile[0][0]
                 maxindex = partial_max_tile[0][1]
-                # accumlate all partial sum
-                for i in range(1, len(partial_max_tile)):
+                hh = partial_max_tile[0][2][0]  
+                ww = partial_max_tile[0][2][1]
+                max_h_w = [hh, ww]
+
+                for itr_b in range(ctx.b):
                     # select the largest among all partial max
                     # have to comapre each B and each C
-                    for itr_b in range(ctx.b):
-                        for itr_c in range(ctx.c):
-                            if partial_max_tile[i][0][itr_b][itr_c][0][0] > maxmax[itr_b][itr_c][0][0]:
+                    for itr_c in range(ctx.c):
+                        for i in range(1, len(partial_max_tile)):
+                            # first 2 index locates the tile; 
+                            if partial_max_tile[i][0][itr_b][itr_c][0][0] >= maxmax[itr_b][itr_c][0][0]:
                                 maxmax[itr_b][itr_c][0][0] = partial_max_tile[i][0][itr_b][itr_c][0][0]
                                 maxindex[itr_b][itr_c][0][0] = partial_max_tile[i][1][itr_b][itr_c][0][0]
-                
+
+                                #print("tt ", type(maxmax[itr_b][itr_c][0][0]), type( maxindex[itr_b][itr_c][0][0]))
+                                # replacing largest t_h and t_w
+                                hh = partial_max_tile[i][2][0]  
+                                ww = partial_max_tile[i][2][1]
+                                # TODO: logic to handle overlapped region max
+                                max_h_w[0] = hh
+                                max_h_w[1] = ww
+
+                        # final set for this plane
+                        META_tile[itr_b][itr_c][max_h_w[0]][max_h_w[1]] = 1                        
                 FINAL_res = maxmax
                 FINAL_ind = maxindex
                 return maxmax # tensor
@@ -136,46 +157,62 @@ class cGMaxPool2dFunction(torch.autograd.Function):
                 # print("partial_max_tile[0][0] size", partial_max_tile[0][0].size())
                 # print("fake size", fake_out.size())
                 return fake_out
+        else:
+            # BK skip recomputation
+            ctx.uniq_id = uniq_id
+            b = input.size()[0]
+            c = input.size()[1]
+            h = input.size()[2]
+            w = input.size()[3]
+            ctx.b = b
+            ctx.c = c
+            ctx.h = h
+            ctx.w = w
+            coord_h = f_info.coord[0]
+            coord_w = f_info.coord[1]
+            nTh = f_info.numof_tiles[0]
+            nTw = f_info.numof_tiles[1]
+
+            ctx.coord_h = coord_h
+            ctx.coord_w = coord_w
+
+
+            return FINAL_res
 
 
     
-    # @staticmethod
-    # def backward(ctx, grad_output):
-    #     # print("\n^^^^^cMaxPool2dFunction bwd")
-    #     # #case1
-    #     # if ctx.input.is_cuda:
-    #     #     grad_in = maxpool_2d_bkw_cuda.backward(grad_output, ctx.input, ctx.kernel_size, ctx.stride, ctx.padding, (1,1), False, ctx.arg_max)
-    #     # else:
-    #     #     grad_in = maxpool_2d_bkw_cpp.backward(grad_output, ctx.input, ctx.kernel_size, ctx.stride, ctx.padding, (1,1), False, ctx.arg_max)
-        
-    #     myctx = myctx_dict[ctx.uniq_id]
+    @staticmethod
+    def backward(ctx, grad_output):
+        print("\n^^^^^cGGMaxPool2dFunction bwd")
+        print("grad_output", grad_output.size())
+        if USE_DEFAULT_CTX:
+            f_info = ctx.info[0][ctx.uniq_id]
+            b = ctx.b
+            c = ctx.c
+            h = ctx.h
+            w = ctx.w
+           
 
-    #     # print("input size", myctx.input.size())
-    #     # print("grad_out size",grad_output.size())
-    #     #print("grad_out ",grad_output)
-    #     # print("arg size",myctx.arg_max.size())
+            rev_g_depth = f_info.op_idex # must be last in our global seg
+            if rev_g_depth == 0:
+                grad_in = torch.zeros(b, c, h, w).to(ctx.model_device)
+                print("grad_in", grad_in.size())
 
+                for i in range(0,b):
+                    for j in range (0,c):
+                        if META_tile[i][j][ctx.coord_h][ctx.coord_w] == 1:
+                            # if the current tile contains the maxmax, restore back
+                            print("large tile at {}{} - {} {}".format(i, j, ctx.coord_h, ctx.coord_w))
+                            indi = FINAL_ind[i][j][0][0]
+                            print(type(indi.item()), type(w))
+                            
+                            max_position_w = indi.item()  % w
+                            max_position_h = indi.item()  // w
 
-    #     f_info = myctx.info[0][ctx.uniq_id]
-    #     b_info = myctx.info[1][ctx.uniq_id]
-    #     rev_g_depth = f_info.op_idex
-    #     g_depth = b_info.op_idex    # global depth
-    #     if g_depth == 0: 
-    #         grad_in = torch._C._nn.max_pool2d_with_indices_backward(grad_output, myctx.input, myctx.kernel_size, myctx.stride, myctx.padding, (1,1), False, myctx.arg_max)
-    #         # reshape to tile size before leaving the segment
-
-    #     elif rev_g_depth == 0:
-    #         # the last stage in regular order
-    #         new_grad_out = grad_output[:, :, b_info.input_slice[2]:b_info.input_slice[3]+1, b_info.input_slice[0]:b_info.input_slice[1]+1]
-    #         #print("new_grad_out", new_grad_out.size())
-    #         grad_in = torch._C._nn.max_pool2d_with_indices_backward(new_grad_out, myctx.input, myctx.kernel_size, myctx.stride, myctx.padding, (1,1), False, myctx.arg_max)
-    #     else:
-    #         grad_in = torch._C._nn.max_pool2d_with_indices_backward(grad_output, myctx.input, myctx.kernel_size, myctx.stride, myctx.padding, (1,1), False, myctx.arg_max)
-    
-    #     #print("##############grad_in in maxp", grad_in.size()) 
-    #     #print("grad in", grad_in)
-    #     torch.cuda.empty_cache()
-    #     return grad_in, None, None, None, None, None, None
+                            print("indi {} {} {} {}".format(indi,w, max_position_h, max_position_w))
+                            grad_in[i][j][max_position_h][max_position_w] = grad_output[i,j]
+      
+        return grad_in, None, None, None, None, None, None, None
         
         
 
