@@ -24,7 +24,7 @@ partial_max_tile = []
 BK_FLAG = False
 
 FINAL_res = None
-FINAL_ind = None
+# FINAL_ind = None
 META_tile = None
 
 class cGMaxPool2dFunction(torch.autograd.Function):
@@ -34,7 +34,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
         #print("\n^^^^^cGmaxPool2dFunction fwd")
         global BK_FLAG
         global FINAL_res
-        global FINAL_ind
+        # global FINAL_ind
         global META_tile
         input = inputs[0]   # tiled input Do we need to get dijoint part??
         #kernel_size = inputs[1]
@@ -172,6 +172,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
 
                 FINAL_res = maxmax
                 #FINAL_ind = maxindex
+                #ctx.metainfo = META_tile
                 return maxmax # tensor
             else:
                 # if not the last tile, return fake 0 tensor
@@ -194,6 +195,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             coord_w = f_info.coord[1]
             nTh = f_info.numof_tiles[0]
             nTw = f_info.numof_tiles[1]
+            #ctx.metainfo = META_tile
 
             ctx.coord_h = coord_h
             ctx.coord_w = coord_w
@@ -204,15 +206,14 @@ class cGMaxPool2dFunction(torch.autograd.Function):
     def backward(ctx, grad_output):
         # print("\n^^^^^cGGMaxPool2dFunction bwd")
         # print("grad_output", grad_output.size())
-        # print("META_tile", META_tile)
+        #print("META_tile", META_tile)
         if USE_DEFAULT_CTX:
             f_info = ctx.info[0][ctx.uniq_id]
             b = ctx.b
             c = ctx.c
             h = ctx.h
             w = ctx.w
-           
-
+          
             rev_g_depth = f_info.op_idex # must be last in our global seg
             if rev_g_depth == 0:
                 grad_in = torch.zeros(b, c, h, w).to(ctx.model_device)
@@ -225,16 +226,14 @@ class cGMaxPool2dFunction(torch.autograd.Function):
                                 # if the current tile contains the maxmax, restore back
                                 #print("large tile at {}{} - {} {}".format(i, j, ctx.coord_h, ctx.coord_w))
                                 indi = pp[1]
-                                print(type(indi.item()), type(w))
+                                #print(type(indi.item()), type(w))
                                 
                                 max_position_w = indi.item()  % w
                                 max_position_h = indi.item()  // w
 
                                 #print("indi {} {} {} {}".format(indi,w, max_position_h, max_position_w))
                                 grad_in[i][j][max_position_h][max_position_w] = grad_output[i,j]
-        del FINAL_ind
-        del FINAL_res
-        del META_tile
+
         return grad_in, None, None, None, None, None, None, None
         
         

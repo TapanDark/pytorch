@@ -13,7 +13,7 @@ from uu.utils import memory
 
 myctx_dict = {}
 #for correctness debug 
-USE_DEFAULT_CTX = True
+USE_DEFAULT_CTX = False
 
 class cMaxPool2dFunction(torch.autograd.Function):
     # create a static variable
