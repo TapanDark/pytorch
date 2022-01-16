@@ -31,7 +31,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
     # create a static variable
     @staticmethod
     def forward(ctx, *inputs):
-        print("\n^^^^^cGmaxPool2dFunction fwd")
+        #print("\n^^^^^cGmaxPool2dFunction fwd")
         global BK_FLAG
         global FINAL_res
         global FINAL_ind
@@ -105,14 +105,14 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             # kernel_size = (input_disjoint.size()[2], input_disjoint.size()[2])
 
 
-            print("input size", input.size(), input)
+            #print("input size", input.size(), input)
             out = F.max_pool2d(input, (h,w), stride, padding, return_indices=True)
             out_value = out[0]
             out_index = out[1]
 
             #print("kernel_size ",kernel_size)
-            print("out_value ",out_value, out_value.size())
-            print("out_index ",out_index, out_index.size())
+            # print("out_value ",out_value, out_value.size())
+            # print("out_index ",out_index, out_index.size())
 
             # store temp (space is 2 element per tile)
             partial_max_tile.append([out_value, out_index, (coord_h, coord_w)] )
@@ -137,7 +137,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
                     # have to comapre each B and each C
                     for itr_c in range(ctx.c):
                         for i in range(0, len(partial_max_tile)):
-                            print("i ", i)
+                            #print("i ", i)
                             # init
                             if i == 0:
                                 META_tile[itr_b][itr_c] = []
@@ -149,7 +149,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
                                     maxmax[itr_b][itr_c][0][0] = partial_max_tile[i][0][itr_b][itr_c][0][0]
                                     maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
 
-                                    print("abs large ")
+                                    #print("abs large ")
                                     # replacing largest t_h and t_w
                                     hh = partial_max_tile[i][2][0]  
                                     ww = partial_max_tile[i][2][1]
@@ -158,16 +158,16 @@ class cGMaxPool2dFunction(torch.autograd.Function):
                                     META_tile[itr_b][itr_c].clear()
                                     meta_inf = ([hh,ww], maxindi)
                                     META_tile[itr_b][itr_c].append(meta_inf)
-                                    print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
+                                    #print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
                                 elif partial_max_tile[i][0][itr_b][itr_c][0][0] == maxmax[itr_b][itr_c][0][0]:
-                                    print("equal caching ")
+                                    #print("equal caching ")
                                     maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
                                     hh = partial_max_tile[i][2][0]  
                                     ww = partial_max_tile[i][2][1]
                                     # need to also put it in the 
                                     meta_inf = ([hh,ww], maxindi)
                                     META_tile[itr_b][itr_c].append(meta_inf)
-                                    print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
+                                    #print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
 
 
                 FINAL_res = maxmax
@@ -202,9 +202,9 @@ class cGMaxPool2dFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        print("\n^^^^^cGGMaxPool2dFunction bwd")
-        print("grad_output", grad_output.size())
-        print("META_tile", META_tile)
+        # print("\n^^^^^cGGMaxPool2dFunction bwd")
+        # print("grad_output", grad_output.size())
+        # print("META_tile", META_tile)
         if USE_DEFAULT_CTX:
             f_info = ctx.info[0][ctx.uniq_id]
             b = ctx.b
@@ -216,23 +216,25 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             rev_g_depth = f_info.op_idex # must be last in our global seg
             if rev_g_depth == 0:
                 grad_in = torch.zeros(b, c, h, w).to(ctx.model_device)
-                print("grad_in", grad_in.size())
+                #print("grad_in", grad_in.size())
 
                 for i in range(0,b):
                     for j in range (0,c):
                         for pp in META_tile[i][j]:
                             if pp[0][0] == ctx.coord_h and pp[0][1] == ctx.coord_w:
                                 # if the current tile contains the maxmax, restore back
-                                print("large tile at {}{} - {} {}".format(i, j, ctx.coord_h, ctx.coord_w))
+                                #print("large tile at {}{} - {} {}".format(i, j, ctx.coord_h, ctx.coord_w))
                                 indi = pp[1]
                                 print(type(indi.item()), type(w))
                                 
                                 max_position_w = indi.item()  % w
                                 max_position_h = indi.item()  // w
 
-                                print("indi {} {} {} {}".format(indi,w, max_position_h, max_position_w))
+                                #print("indi {} {} {} {}".format(indi,w, max_position_h, max_position_w))
                                 grad_in[i][j][max_position_h][max_position_w] = grad_output[i,j]
-        
+        del FINAL_ind
+        del FINAL_res
+        del META_tile
         return grad_in, None, None, None, None, None, None, None
         
         
