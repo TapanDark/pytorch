@@ -104,12 +104,13 @@ class TiledConv2dFunction(torch.autograd.Function):
             return out
         else:   #NOT USE_DEFAULT_CTX
             #print("myctx_dict.keys()", myctx_dict.keys())
-            if uniq_id in myctx_dict.keys():
+            if uniq_id in myctx_dict.keys() and myctx_dict[uniq_id] != None:
                 #print("need to get existing")
                 myctx = myctx_dict[uniq_id]
                 # del myctx
                 # myctx = MMctx()
             else:
+                #print("new create conv", info[0][uniq_id].coord)
                 myctx = conv_2d_ctx()
 
             c_info = info[0][uniq_id]   
@@ -322,6 +323,9 @@ class TiledConv2dFunction(torch.autograd.Function):
             del myctx.input
             del myctx.weight
             del myctx.info
+            if b_info.coord[0] == 0 and b_info.coord[1] == 0:
+                #print("cConv2dFunction last")
+                myctx_dict[ctx.uniq_id] = None
 
             return grad_input, grad_weight, grad_bias, None, None, None, None, None, None, None, None
         else: 

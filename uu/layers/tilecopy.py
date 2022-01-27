@@ -18,6 +18,7 @@ class TiledCopyFunction(torch.autograd.Function):
         # print("out_temp", out_temp.size())
         out[:,:, coord[2]:coord[3]+1, coord[0]:coord[1]+1] = out_temp
         #output.requires_grad = True #tensors[0].requires_grad
+   
 
         return out
     
@@ -37,6 +38,8 @@ class TiledCopyFunction(torch.autograd.Function):
         res.append(None)
         res = tuple(res)
         #print(TiledCopyFunction.GRAD_OUT)
+     
+
         return res
 
         #return (TiledCopyFunction.GRAD_OUT, None, None, None)

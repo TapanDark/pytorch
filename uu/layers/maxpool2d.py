@@ -49,12 +49,15 @@ class cMaxPool2dFunction(torch.autograd.Function):
             ctx.uniq_id = uniq_id
             return out_value
         else:
-            if uniq_id in myctx_dict.keys():
+            # if inputs[4][1][-11].coord[0] == 0 and inputs[4][1][-11].coord[1] == 0:
+            #     assert (myctx_dict[uniq_id] == None)
+            if uniq_id in myctx_dict.keys() and myctx_dict[uniq_id] != None:
                 # print("need to get existing")
                 myctx = myctx_dict[uniq_id]
                 # del myctx
                 # myctx = MMctx()
             else:
+                #print("new create mxp", inputs[4][0][uniq_id].coord)
                 myctx = maxpool_2d_ctx()
 
             if not is_ccheckpoint:
@@ -158,9 +161,13 @@ class cMaxPool2dFunction(torch.autograd.Function):
             # print("de {} Mem {} UntilMax{}".format(ctx.model_device, memory.MemSize(innermem), memUsage.maxx())  )
 
 
+        
             del myctx.input
             del myctx.arg_max
             del myctx.info
+
+            if b_info.coord[0] == 0 and b_info.coord[1] == 0:
+                myctx_dict[ctx.uniq_id] = None
 
 
             # print("==== **  after deleting ...")

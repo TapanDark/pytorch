@@ -111,18 +111,15 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             out_index = out[1]
 
             #print("kernel_size ",kernel_size)
-            # print("out_value ",out_value, out_value.size())
-            # print("out_index ",out_index, out_index.size())
+            #print("cord {}, out_value{} out_indi {} H {} W {}".format((coord_h, coord_w), out_value, out_index, ctx.h, ctx.w))
+            
 
             # store temp (space is 2 element per tile)
-            partial_max_tile.append([out_value, out_index, (coord_h, coord_w)] )
+            partial_max_tile.append([out_value, out_index, (coord_h, coord_w), (ctx.h, ctx.w)] )
 
             if coord_h == nTh-1 and coord_w == nTw-1:
-                
                 # META_tile / FINAL_ind  should be an [B][C][List]
                 META_tile = numpy.empty((ctx.b, ctx.c),dtype=object)
-                #FINAL_ind = numpy.empty((ctx.b, ctx.c),dtype=object)
-
                 BK_FLAG = True # it must be the end of the FWD pass, so set the flag to avoid recomputation
                 assert(len(partial_max_tile) == nTh*nTw)
                 maxmax = partial_max_tile[0][0]
@@ -142,12 +139,21 @@ class cGMaxPool2dFunction(torch.autograd.Function):
                             if i == 0:
                                 META_tile[itr_b][itr_c] = []
                                 maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
-                                META_tile[itr_b][itr_c].append( (max_h_w, maxindi) )
+                                cur_h = partial_max_tile[i][3][0]
+                                cur_w = partial_max_tile[i][3][1]
+                                META_tile[itr_b][itr_c].append( (max_h_w, maxindi, [cur_h, cur_w]) )
                             else:
                                 # first 2 index locates the tile; 
                                 if partial_max_tile[i][0][itr_b][itr_c][0][0] > maxmax[itr_b][itr_c][0][0]:
                                     maxmax[itr_b][itr_c][0][0] = partial_max_tile[i][0][itr_b][itr_c][0][0]
                                     maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
+
+                                    cur_h = partial_max_tile[i][3][0]
+                                    cur_w = partial_max_tile[i][3][1]
+                                    max_position_w = maxindi.item()  % cur_w
+                                    max_position_h = maxindi.item()  // cur_w
+                                    assert (max_position_w < cur_w and max_position_w>= 0 and max_position_h >=0 and max_position_h<cur_h), "abs indi {} h {} w {} ph{} - pw{}".format(maxindi,cur_h, cur_w, max_position_h, max_position_w)
+
 
                                     #print("abs large ")
                                     # replacing largest t_h and t_w
@@ -155,17 +161,29 @@ class cGMaxPool2dFunction(torch.autograd.Function):
                                     ww = partial_max_tile[i][2][1]
 
                                     # need to clean up buffer
-                                    META_tile[itr_b][itr_c].clear()
-                                    meta_inf = ([hh,ww], maxindi)
+                                    META_tile[itr_b][itr_c]=[]
+                                    meta_inf = ([hh,ww], maxindi, [cur_h, cur_w])
                                     META_tile[itr_b][itr_c].append(meta_inf)
                                     #print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
                                 elif partial_max_tile[i][0][itr_b][itr_c][0][0] == maxmax[itr_b][itr_c][0][0]:
                                     #print("equal caching ")
                                     maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
+
+                                   
+                                    cur_h = partial_max_tile[i][3][0]
+                                    cur_w = partial_max_tile[i][3][1]
+
+
+                                    max_position_w = maxindi.item()  % cur_w
+                                    max_position_h = maxindi.item()  // cur_w
+                                    assert (max_position_w < cur_w and max_position_w>= 0 and max_position_h >=0 and max_position_h<cur_h), "abs indi {} h {} w {} ph{} - pw{}".format(maxindi,cur_h, cur_w, max_position_h, max_position_w)
+
+
                                     hh = partial_max_tile[i][2][0]  
                                     ww = partial_max_tile[i][2][1]
                                     # need to also put it in the 
-                                    meta_inf = ([hh,ww], maxindi)
+                                    # tile size is not same, so need to store cur_h, cur_w for tile h/w extent
+                                    meta_inf = ([hh,ww], maxindi, [cur_h, cur_w])
                                     META_tile[itr_b][itr_c].append(meta_inf)
                                     #print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
 
@@ -187,7 +205,8 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             c = input.size()[1]
             h = input.size()[2]
             w = input.size()[3]
-            ctx.b = b
+            #TODO: override issue ??
+            ctx.b = 15
             ctx.c = c
             ctx.h = h
             ctx.w = w
@@ -199,6 +218,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
 
             ctx.coord_h = coord_h
             ctx.coord_w = coord_w
+            print("recomp", ctx.coord_h, ctx.coord_w)
             return FINAL_res
 
 
@@ -217,7 +237,8 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             rev_g_depth = f_info.op_idex # must be last in our global seg
             if rev_g_depth == 0:
                 grad_in = torch.zeros(b, c, h, w).to(ctx.model_device)
-                #print("grad_in", grad_in.size())
+                print("grad_in", grad_in.size())
+                print("bkkk", ctx.coord_h, ctx.coord_w)
 
                 for i in range(0,b):
                     for j in range (0,c):
@@ -227,13 +248,20 @@ class cGMaxPool2dFunction(torch.autograd.Function):
                                 #print("large tile at {}{} - {} {}".format(i, j, ctx.coord_h, ctx.coord_w))
                                 indi = pp[1]
                                 #print(type(indi.item()), type(w))
+
+                                cur_h = pp[2][0]
+                                cur_w = pp[2][1]
+  
+                                max_position_w = indi.item()  % cur_w
+                                max_position_h = indi.item()  // cur_w
                                 
-                                max_position_w = indi.item()  % w
-                                max_position_h = indi.item()  // w
 
-                                #print("indi {} {} {} {}".format(indi,w, max_position_h, max_position_w))
-                                grad_in[i][j][max_position_h][max_position_w] = grad_output[i,j]
+                                assert (max_position_w < cur_w and max_position_w>= 0 and max_position_h >=0 and max_position_h<cur_h), "indi {} h {} w {} ph{} - pw{}".format(indi,cur_h, cur_w, max_position_h, max_position_w)
 
+                                
+                                #TODO: 4D tensor specified and we know it is 1x1 in HW
+                                grad_in[i][j][max_position_h][max_position_w] = grad_output[i][j][0][0]
+            
         return grad_in, None, None, None, None, None, None, None
         
         

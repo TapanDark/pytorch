@@ -66,7 +66,7 @@ class Net_ref(nn.Module):
     def forward(self, x):
         out = self.block1(x)
         #print("out.shape 1 ", out.size(), out)
-        out = self.maxgp(out)
+        out = self.avgp(out)
         print("out.shape 2 ", out.size(), out)
         # out = self.sft(out)
         # print("out.shape final", out.size(), out)
@@ -90,14 +90,14 @@ class Net(nn.Module):
                                         padding=(Ph,Pw),
                                         ) 
         self.mxp1 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
-        #self.avgp = gavgpool2d.cGAvgPool2d()
-        self.gmaxp = gmaxpool2d.cGMaxPool2d()
+        self.avgp = gavgpool2d.cGAvgPool2d()
+        #self.gmaxp = gmaxpool2d.cGMaxPool2d()
         self.sft = nn.Softmax(dim=-1)
 
         self.tsplit = tilesplit.TiledSplit()
         self.tcopy = tilecopy.TiledCopy()
 
-        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2, self.mxp1, self.gmaxp]) #
+        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2, self.mxp1, self.avgp]) #
         
     # static  out_temp =None
     def forward(self, x, H, W, nTh, nTw):
@@ -119,9 +119,9 @@ class Net(nn.Module):
                 output_shape = (N,C,oH,oW)
                 info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict, model_device)
                
-                out += self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
+                #out += self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
                 #print("out", out.size(), out)
-                #out += checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
+                out += checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
 
                 # if out_temp is not None:
                 #     print("out tile", out_temp.size(), out_temp)
@@ -142,6 +142,7 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     input = torch.rand(batch,chanel,H,W, requires_grad = True)
+    input1 = torch.rand(batch,chanel,H,W, requires_grad = True)
     model = Net().to(device)
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
     w1 = model.conv2d_1.weight.data
@@ -149,7 +150,11 @@ def main():
     model_ref =  Net_ref(w1, w2).to(device)
     input_ref = input.data.clone() 
     input_ref = input_ref.cuda()
+
+    input_ref1 = input1.data.clone() 
+    input_ref1 = input_ref1.cuda()
     input_ref.requires_grad = True
+
     out_ref = model_ref(input_ref)
     out_ref.sum().backward()
     
@@ -158,15 +163,11 @@ def main():
 
     out = model(input, H, W, nTh, nTw )
 
-    
-
 
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
     print("~~ check forward correctness ~~")
     print("out ref ", out_ref)
     print("out  ", out)
-
-
     correctness_check.check_equal(out, out_ref, False)
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
@@ -182,6 +183,34 @@ def main():
     print(model_ref.conv2d_2.weight.grad)
 
 
+    out_ref1 = model_ref(input_ref1)
+    out_ref1.sum().backward()
+
+    out1 = model(input1, H, W, nTh, nTw )
+
+    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    print("~~ check forward correctness ~~")
+    print("out ref ", out_ref1)
+    print("out  ", out1)
+
+    correctness_check.check_equal(out1, out_ref1, False)
+    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+
+
+    out1.sum().backward()
+
+
+    print("#### compare w1")
+    correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
+
+    print("#### compare w2")
+    correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
+    print(model_ref.conv2d_2.weight.grad)
+
+
+    
+
+
 
 
 if __name__=="__main__":
@@ -189,15 +218,15 @@ if __name__=="__main__":
     Kw = 3
     Ph = 1
     Pw = 1
-    chanel = 2
+    chanel = 3
     batch = 1
 
 
 
-    H = 16
-    W = 16
+    H = 128
+    W = 256
     oH = H//2
     oW = W//2
-    nTh = 2
-    nTw = 2
+    nTh = 8
+    nTw = 4
     main()
