@@ -151,7 +151,7 @@ class Net(nn.Module):
                 # print("coord", coord)
                 input_shape = (N,C,H,W)
                 output_shape = (N,C,oH,oW)
-                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
+                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict, model_device)
                 # print(info)
                 #print("++++++++++++++++++++++++++++++++++++++++++++++++")
                 out_temp = checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])

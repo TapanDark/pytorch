@@ -20,9 +20,10 @@ class MMctx:
 
 USE_DEFAULT_CTX = True
 myctx_dict = {}
-partial_max_tile = []
-BK_FLAG = False
+partial_max_tile_all = None
+# BK_FLAG = False
 
+ROUND_PRECI = 4
 FINAL_res = None
 # FINAL_ind = None
 META_tile = None
@@ -32,10 +33,11 @@ class cGMaxPool2dFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, *inputs):
         #print("\n^^^^^cGmaxPool2dFunction fwd")
-        global BK_FLAG
+        #global BK_FLAG
         global FINAL_res
         # global FINAL_ind
         global META_tile
+        global partial_max_tile_all
         input = inputs[0]   # tiled input Do we need to get dijoint part??
         #kernel_size = inputs[1]
         stride = inputs[2]
@@ -49,7 +51,10 @@ class cGMaxPool2dFunction(torch.autograd.Function):
         f_info = info[0][uniq_id]
         b_info = info[1][uniq_id]
 
-        if USE_DEFAULT_CTX and not BK_FLAG:
+        # print(f_info)
+        # print(b_info)
+
+        if is_ccheckpoint: 
             ctx.uniq_id = uniq_id
             b = input.size()[0]
             c = input.size()[1]
@@ -66,137 +71,122 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             ctx.coord_w = coord_w
             nTh = f_info.numof_tiles[0]
             nTw = f_info.numof_tiles[1]
+            
+            if coord_h == 0 and coord_w == 0:
+                # partial_max_tile = []
+                # assert(len(partial_max_tile) == 0), "init partial_max_tile size coord {} {} --> {}".format(coord_h, coord_w, len(partial_sums_tile))
+                partial_max_tile_all = numpy.empty((ctx.b, ctx.c),dtype=object)
+                for itr_b in range(ctx.b):
+                    # select the largest among all partial max
+                    for itr_c in range(ctx.c):
+                        partial_max_tile_all[itr_b][itr_c]=[]
 
-            # for input view non_disjoint
-            # previous_op_id = b_info.next_id
-            # pre_f_info = info[0][previous_op_id]
-
-            # non_disjoint_tile_size_h = pre_f_info.non_disjoint_tile_size[0]
-            # non_disjoint_tile_size_w = pre_f_info.non_disjoint_tile_size[1]
-
-            # dim_tp = (len(input.size())-2, len(input.size())-1)
-            # # extract non-disjoint
-            # fake_pi = info[0][-11]
-            # tile_shape = fake_pi.cur_output_shape
-            # tile_size = [tile_shape[0], tile_shape[1]]
-            # input_index = fake_pi.input_slice
-
-            # non_disj_index_h_b = coord_h*non_disjoint_tile_size_h
-            # non_disj_index_h_e = non_disj_index_h_b + non_disjoint_tile_size_h - 1
-            # non_disj_index_w_b = coord_w*non_disjoint_tile_size_w
-            # non_disj_index_w_e = non_disj_index_w_b + non_disjoint_tile_size_w - 1
-            #non_disj_index = [non_disj_index_w_b, non_disj_index_w_e, non_disj_index_h_b, non_disj_index_h_e] #(l,r,t,b) 
-
-            #relative offset
-            # l = abs(non_disj_index_w_b-input_index[0])
-            # r = abs(non_disj_index_w_e-input_index[1])
-            # t = abs(non_disj_index_h_b-input_index[2])
-            # b = abs(non_disj_index_h_e-input_index[3])
-            # in_tile_h = input.size()[2]
-            # in_tile_w = input.size()[3]
-
-            # disjoint view of input:= input[:,:, t:in_tile_h-b, l:in_tile_w-r]
-            #TODO: is checkpoint????
-            #input_disjoint = input[:,:, t:in_tile_h-b, l:in_tile_w-r]
-            ## TODO:?? I think no disjoint need here for maxp
-            # print("l, r, t, b", l, r, t, b)
-            # print("input_disjoint ext ", input_disjoint[:,:, t:in_tile_h-b, l:in_tile_w-r].size())
-            # local tile do gloable maxpool, kernel size == h,w extend
-            # kernel_size = (input_disjoint.size()[2], input_disjoint.size()[2])
-
-
-            #print("input size", input.size(), input)
-            out = F.max_pool2d(input, (h,w), stride, padding, return_indices=True)
-            out_value = out[0]
-            out_index = out[1]
-
-            #print("kernel_size ",kernel_size)
-            #print("cord {}, out_value{} out_indi {} H {} W {}".format((coord_h, coord_w), out_value, out_index, ctx.h, ctx.w))
             
 
-            # store temp (space is 2 element per tile)
-            partial_max_tile.append([out_value, out_index, (coord_h, coord_w), (ctx.h, ctx.w)] )
+            for itr_b in range(ctx.b):
+                # select the largest among all partial max
+                for itr_c in range(ctx.c):
+                    #print("inout {} b {} c {}".format(input.size(), itr_b, itr_c))
+                    tmp_slice = input[itr_b,itr_c,:,:]
+                    tmp_slice = tmp_slice[None,None, :]
+                    #print("slice shape (2D ??)" ,tmp_slice.size())
+                    out = F.max_pool2d(tmp_slice, (h,w), stride, padding, return_indices=True)
+                    out_value = out[0]
+                    out_index = out[1]
+                    #print("out v", out_value, out_index)
+                    partial_max_tile_all[itr_b][itr_c].append([out_value, out_index, (coord_h, coord_w), (ctx.h, ctx.w)])
 
+
+
+            # #print("kernel_size ",kernel_size)
+            # # print("cord {},  H {} W {} Th {} Tw {}"
+            # #     .format((coord_h, coord_w),  ctx.h, ctx.w, nTh, nTw))
+            
             if coord_h == nTh-1 and coord_w == nTw-1:
-                # META_tile / FINAL_ind  should be an [B][C][List]
-                META_tile = numpy.empty((ctx.b, ctx.c),dtype=object)
-                BK_FLAG = True # it must be the end of the FWD pass, so set the flag to avoid recomputation
-                assert(len(partial_max_tile) == nTh*nTw)
-                maxmax = partial_max_tile[0][0]
-                # maxindex = partial_max_tile[0][1]
-                hh = partial_max_tile[0][2][0]  
-                ww = partial_max_tile[0][2][1]
-                max_h_w = [hh, ww]
-               
+                #print("*** ",partial_max_tile_all[0][0])
 
+                META_tile = numpy.empty((ctx.b, ctx.c),dtype=object)
+                FINAL_res = torch.zeros(b,c,1,1, requires_grad=True).to(ctx.model_device)
                 for itr_b in range(ctx.b):
                     # select the largest among all partial max
                     # have to comapre each B and each C
                     for itr_c in range(ctx.c):
+                        # get current b,c list of partial max results
+                        partial_max_tile = partial_max_tile_all[itr_b][itr_c]
+                        #print("len(partial_max_tile) ", len(partial_max_tile), nTh, nTw)
+                        assert(len(partial_max_tile) == nTh*nTw) # each HW surface is in nTh*nTw tiles
+
                         for i in range(0, len(partial_max_tile)):
-                            #print("i ", i)
-                            # init
+                            
                             if i == 0:
+                                # init maxmax and cordTh, cordTw
+                                # init Meta info as empty list
                                 META_tile[itr_b][itr_c] = []
-                                maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
+                                maxmax = partial_max_tile[i][0]
+                                maxmax = round(maxmax.item(), ROUND_PRECI)
+            
+                                hh = partial_max_tile[i][2][0]  
+                                ww = partial_max_tile[i][2][1]
+                                max_h_w = [hh, ww] # max tile coord
+                                maxindi = partial_max_tile[i][1]
                                 cur_h = partial_max_tile[i][3][0]
                                 cur_w = partial_max_tile[i][3][1]
                                 META_tile[itr_b][itr_c].append( (max_h_w, maxindi, [cur_h, cur_w]) )
-                            else:
-                                # first 2 index locates the tile; 
-                                if partial_max_tile[i][0][itr_b][itr_c][0][0] > maxmax[itr_b][itr_c][0][0]:
-                                    maxmax[itr_b][itr_c][0][0] = partial_max_tile[i][0][itr_b][itr_c][0][0]
-                                    maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
+                            
+                            # to overcome precision issue
+                            if round(partial_max_tile[i][0].item(), ROUND_PRECI) > maxmax:
+                                #print("abs large ", i )
+                                maxmax = round(partial_max_tile[i][0].item(), ROUND_PRECI)
+                                maxindi = partial_max_tile[i][1]
+                                #full_precision_max = partial_max_tile[i][0].item()
 
-                                    cur_h = partial_max_tile[i][3][0]
-                                    cur_w = partial_max_tile[i][3][1]
-                                    max_position_w = maxindi.item()  % cur_w
-                                    max_position_h = maxindi.item()  // cur_w
-                                    assert (max_position_w < cur_w and max_position_w>= 0 and max_position_h >=0 and max_position_h<cur_h), "abs indi {} h {} w {} ph{} - pw{}".format(maxindi,cur_h, cur_w, max_position_h, max_position_w)
+                                cur_h = partial_max_tile[i][3][0]
+                                cur_w = partial_max_tile[i][3][1]
+                                # max_position_w = maxindi.item()  % cur_w
+                                # max_position_h = maxindi.item()  // cur_w
+                                #assert (max_position_w < cur_w and max_position_w>= 0 and max_position_h >=0 and max_position_h<cur_h), "abs indi {} h {} w {} ph{} - pw{}".format(maxindi,cur_h, cur_w, max_position_h, max_position_w)
 
+                                # replacing largest t_h and t_w
+                                hh = partial_max_tile[i][2][0]  
+                                ww = partial_max_tile[i][2][1]
 
-                                    #print("abs large ")
-                                    # replacing largest t_h and t_w
-                                    hh = partial_max_tile[i][2][0]  
-                                    ww = partial_max_tile[i][2][1]
+                                # need to clean up buffer
+                                META_tile[itr_b][itr_c]=[]
+                                meta_inf = ([hh,ww], maxindi, [cur_h, cur_w])
+                                META_tile[itr_b][itr_c].append(meta_inf)
+                                #print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
+                            elif round(partial_max_tile[i][0].item(), ROUND_PRECI) == maxmax:
+                                #print("equal caching ", i)
+                                maxindi = partial_max_tile[i][1]
 
-                                    # need to clean up buffer
-                                    META_tile[itr_b][itr_c]=[]
-                                    meta_inf = ([hh,ww], maxindi, [cur_h, cur_w])
-                                    META_tile[itr_b][itr_c].append(meta_inf)
-                                    #print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
-                                elif partial_max_tile[i][0][itr_b][itr_c][0][0] == maxmax[itr_b][itr_c][0][0]:
-                                    #print("equal caching ")
-                                    maxindi = partial_max_tile[i][1][itr_b][itr_c][0][0]
-
-                                   
-                                    cur_h = partial_max_tile[i][3][0]
-                                    cur_w = partial_max_tile[i][3][1]
-
-
-                                    max_position_w = maxindi.item()  % cur_w
-                                    max_position_h = maxindi.item()  // cur_w
-                                    assert (max_position_w < cur_w and max_position_w>= 0 and max_position_h >=0 and max_position_h<cur_h), "abs indi {} h {} w {} ph{} - pw{}".format(maxindi,cur_h, cur_w, max_position_h, max_position_w)
+                                cur_h = partial_max_tile[i][3][0]
+                                cur_w = partial_max_tile[i][3][1]
 
 
-                                    hh = partial_max_tile[i][2][0]  
-                                    ww = partial_max_tile[i][2][1]
-                                    # need to also put it in the 
-                                    # tile size is not same, so need to store cur_h, cur_w for tile h/w extent
-                                    meta_inf = ([hh,ww], maxindi, [cur_h, cur_w])
-                                    META_tile[itr_b][itr_c].append(meta_inf)
-                                    #print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
+                                # max_position_w = maxindi.item()  % cur_w
+                                # max_position_h = maxindi.item()  // cur_w
+                                #assert (max_position_w < cur_w and max_position_w>= 0 and max_position_h >=0 and max_position_h<cur_h), "abs indi {} h {} w {} ph{} - pw{}".format(maxindi,cur_h, cur_w, max_position_h, max_position_w)
 
+                                hh = partial_max_tile[i][2][0]  
+                                ww = partial_max_tile[i][2][1]
+                                #print("cacheing ", hh, ww)
+                                # need to also put it in the 
+                                # tile size is not same, so need to store cur_h, cur_w for tile h/w extent
+                                meta_inf = ([hh,ww], maxindi, [cur_h, cur_w])
+                                META_tile[itr_b][itr_c].append(meta_inf)
+                                #print("{} {} --> {}", itr_b, itr_c,META_tile[itr_b][itr_c] )
+                        
+                        FINAL_res[itr_b][itr_c][0][0] = maxmax
+                        # if (itr_b == 0 and itr_c == 0):
+                        #     print(" 00 MAX", maxmax, META_tile[itr_b][itr_c])
 
-                FINAL_res = maxmax
-                #FINAL_ind = maxindex
-                #ctx.metainfo = META_tile
-                return maxmax # tensor
+                #print("FINAL_res ", FINAL_res.size())
+                return FINAL_res # tensor
             else:
                 # if not the last tile, return fake 0 tensor
-                fake_out = torch.zeros(partial_max_tile[0][0].size(), requires_grad=True).to(ctx.model_device)
+                fake_out = torch.zeros(b,c,1,1, requires_grad=True).to(ctx.model_device)
                 # print("partial_max_tile[0][0] size", partial_max_tile[0][0].size())
-                # print("fake size", fake_out.size())
+                #print("fake size", fake_out.size())
                 return fake_out
         else:
             # BK skip recomputation
@@ -205,8 +195,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             c = input.size()[1]
             h = input.size()[2]
             w = input.size()[3]
-            #TODO: override issue ??
-            ctx.b = 15
+            ctx.b = b
             ctx.c = c
             ctx.h = h
             ctx.w = w
@@ -218,14 +207,14 @@ class cGMaxPool2dFunction(torch.autograd.Function):
 
             ctx.coord_h = coord_h
             ctx.coord_w = coord_w
-            print("recomp", ctx.coord_h, ctx.coord_w)
+            #print("recomp", ctx.coord_h, ctx.coord_w)
             return FINAL_res
 
 
     @staticmethod
     def backward(ctx, grad_output):
         # print("\n^^^^^cGGMaxPool2dFunction bwd")
-        # print("grad_output", grad_output.size())
+        #print("grad_output", grad_output.size())
         #print("META_tile", META_tile)
         if USE_DEFAULT_CTX:
             f_info = ctx.info[0][ctx.uniq_id]
@@ -237,17 +226,18 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             rev_g_depth = f_info.op_idex # must be last in our global seg
             if rev_g_depth == 0:
                 grad_in = torch.zeros(b, c, h, w).to(ctx.model_device)
-                print("grad_in", grad_in.size())
-                print("bkkk", ctx.coord_h, ctx.coord_w)
+                # print("grad_in", grad_in.size())
+                # print("bkkk", ctx.coord_h, ctx.coord_w, h, w)
 
                 for i in range(0,b):
                     for j in range (0,c):
-                        for pp in META_tile[i][j]:
+                        #print("??",i, j, META_tile[i][j])
+                        for pp in META_tile[i][j]: # get currnt b,c maxmax
                             if pp[0][0] == ctx.coord_h and pp[0][1] == ctx.coord_w:
                                 # if the current tile contains the maxmax, restore back
                                 #print("large tile at {}{} - {} {}".format(i, j, ctx.coord_h, ctx.coord_w))
                                 indi = pp[1]
-                                #print(type(indi.item()), type(w))
+                               
 
                                 cur_h = pp[2][0]
                                 cur_w = pp[2][1]
@@ -255,12 +245,15 @@ class cGMaxPool2dFunction(torch.autograd.Function):
                                 max_position_w = indi.item()  % cur_w
                                 max_position_h = indi.item()  // cur_w
                                 
+                                # print("-->b {} c {} mxh {} mxw {} gradvalue {}".format(i,j, max_position_h, max_position_w, grad_output[i][j][0][0]))
+                                # print( "-->indi {} cooH {} cooW {} h {} w {} ph {} - pw {}".format(indi,ctx.coord_h, ctx.coord_w , cur_h, cur_w, max_position_h, max_position_w))
+                                # assert (max_position_w < cur_w and max_position_w>= 0 and max_position_h >=0 and max_position_h<cur_h)
 
-                                assert (max_position_w < cur_w and max_position_w>= 0 and max_position_h >=0 and max_position_h<cur_h), "indi {} h {} w {} ph{} - pw{}".format(indi,cur_h, cur_w, max_position_h, max_position_w)
-
-                                
                                 #TODO: 4D tensor specified and we know it is 1x1 in HW
                                 grad_in[i][j][max_position_h][max_position_w] = grad_output[i][j][0][0]
+
+                                # if (j <= 1):
+                                #     print(grad_in)
             
         return grad_in, None, None, None, None, None, None, None
         

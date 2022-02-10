@@ -408,7 +408,7 @@ class Net(nn.Module):
                 # TODO: here we have to somehow provide static info and num_conv. 
                 input_shape = (N,C,H,W)
                 output_shape = (N,C,oH,oW)
-                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
+                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict, model_device)
     # add grad_payload as negate keys
                 #info[0].update(grad_dict_bk)
       # add grad_payload as negate keys
