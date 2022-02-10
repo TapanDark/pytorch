@@ -15,7 +15,7 @@ Kh = Kw = 3
 Ph = Pw = 1
 b = 2
 c = 2
-h = w = 16
+h = w = 256
 out_ch = 5
 in_ch = 2
 nTh = nTw = 4
@@ -28,31 +28,31 @@ class Net_ref(nn.Module):
         self.conv2d_1 = nn.Conv2d(in_channels=in_ch, 
                                   out_channels=out_ch, 
                                   kernel_size=(Kh,Kw),
-                                  #bias = False,
+                                  bias = False,
                                   padding=(Ph,Pw)
                                   )
-        self.conv2d_2 = nn.Conv2d(in_channels=out_ch, 
-                                  out_channels=out_ch,
-                                  kernel_size=(Kh,Kw),
-                                  #bias = False,
-                                  padding=(Ph,Pw)
-                                  )
+        # self.conv2d_2 = nn.Conv2d(in_channels=out_ch, 
+        #                           out_channels=out_ch,
+        #                           kernel_size=(Kh,Kw),
+        #                           bias = False,
+        #                           padding=(Ph,Pw)
+        #                           )
         # w1 = (torch.reshape(torch.arange(0, in_ch*out_ch*Kh*Kw, step=1.0, dtype=torch.float), (out_ch, in_ch, Kh, Kw)))
         #b1 = torch.tensor([-1000, -2000, -3000, -4000, -5000], dtype=torch.float)
         self.conv2d_1.weight = Parameter(w1)
-        self.conv2d_1.bias = Parameter(b1)
-        self.conv2d_2.weight = Parameter(w2)
-        self.conv2d_2.bias = Parameter(b2)
+        #self.conv2d_1.bias = Parameter(b1)
+        #self.conv2d_2.weight = Parameter(w2)
+        #self.conv2d_2.bias = Parameter(b2)
 
-        print("conv bias ref", self.conv2d_1.bias)
-        print("conv bias ref", self.conv2d_2.bias)
+        #print("conv bias ref", self.conv2d_1.bias)
+        #print("conv bias ref", self.conv2d_2.bias)
 
         #self.conv2d_1.register_full_backward_hook(print_grad)
         
 
     def forward(self, x):
         out = self.conv2d_1(x)
-        out = self.conv2d_2(out)
+        #out = self.conv2d_2(out)
         #print("out.shape final", out.size(), out)
         return out
 
@@ -63,15 +63,15 @@ class Net(nn.Module):
         self.conv2d_1 = conv2d.TiledConv2d(in_channels=in_ch, 
                                   out_channels=out_ch, 
                                   kernel_size=(Kh,Kw),
-                                  #bias = False,
+                                  bias = False,
                                   padding=(Ph,Pw)
                                   )
-        self.conv2d_2 = conv2d.TiledConv2d(in_channels=out_ch, 
-                                  out_channels=out_ch,
-                                  kernel_size=(Kh,Kw),
-                                  #bias = False,
-                                  padding=(Ph,Pw)
-                                  )
+        # self.conv2d_2 = conv2d.TiledConv2d(in_channels=out_ch, 
+        #                           out_channels=out_ch,
+        #                           kernel_size=(Kh,Kw),
+        #                           bias = False,
+        #                           padding=(Ph,Pw)
+        #                           )
         # w1 = (torch.reshape(torch.arange(0, in_ch*out_ch*Kh*Kw, step=1.0, dtype=torch.float), (out_ch, in_ch, Kh, Kw)))
         # b1 = torch.tensor([-1000, -2000, -3000, -4000, -5000], dtype=torch.float)
         # self.conv2d_1.weight = Parameter(w1)
@@ -80,7 +80,7 @@ class Net(nn.Module):
         self.tsplit = tilesplit.TiledSplit()
         self.tcopy = tilecopy.TiledCopy()
 
-        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2])
+        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1])
 
         # self.conv2d_1.register_full_backward_hook(print_grad)
         
@@ -101,9 +101,9 @@ class Net(nn.Module):
                 print("coord", coord)
                 input_shape = (N,C,h,w)
                 output_shape = (N,C,oH,oW)
-                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
+                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict, model_device)
 
-                out_temp = self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
+                out_temp = checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
 
                 fake_pi = info[0][-11]
                 tile_shape = fake_pi.cur_output_shape
@@ -127,7 +127,7 @@ def print_grad(self, grad_input, grad_output):
     #print('ref grad_input  : \n', grad_input[0])
 
 def main():
-    torch.set_default_dtype(torch.float64)
+    torch.set_default_dtype(torch.float32)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -137,16 +137,17 @@ def main():
 
     input_our = input.data.clone() 
     input_our = input_our.cuda()
+    input_our.requires_grad = True
     model_our = Net().to(device)
     out_our = model_our(input_our)
     out_our.sum().backward()
 
     w1 = model_our.conv2d_1.weight.data
-    b1 = model_our.conv2d_1.bias.data
-    w2 = model_our.conv2d_2.weight.data
-    b2 = model_our.conv2d_2.bias.data
-    print("b1", b1)
-    print("b2", b2)
+    b1 = None # model_our.conv2d_1.bias.data
+    w2 = None # model_our.conv2d_2.weight.data
+    b2 = None # model_our.conv2d_2.bias.data
+    # print("b1", b1)
+    # print("b2", b2)
     # w2 = model_our.conv2d_2.weight.data
     # b1 = model_our.conv2d_2.bias.data
     #print("out_our", out_our)
