@@ -11,8 +11,8 @@ from uu.utils import checkpoint
 import time
 
 
-Kh = Kw = 3
-Ph = Pw = 1
+Kh = Kw = 5
+Ph = Pw = 2
 b = 1
 c = 1
 h = w = 16

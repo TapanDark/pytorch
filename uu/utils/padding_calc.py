@@ -614,8 +614,10 @@ def conv2d_revr_padding_info_stride(tile_indx: List, none_tiled_output_shape, pa
     # TODO: why do I need padding here?? maybe is the closest strided number
     adj_tile_top = (shf_tile_top // stride)*stride
     adj_tile_left = (shf_tile_left // stride)*stride
-    H_cover = output_element_covered(adj_tile_top, shf_tile_bottom, RS-1, stride, oH)
-    W_cover = output_element_covered(adj_tile_left, shf_tile_right, RS-1, stride, oW)
+    padded_H = oH+2*pads[0]
+    padded_W = oW+2*pads[0]
+    H_cover = output_element_covered(adj_tile_top, shf_tile_bottom, RS-1, stride, padded_H)
+    W_cover = output_element_covered(adj_tile_left, shf_tile_right, RS-1, stride, padded_W)
 
     print("H_cover", adj_tile_top, adj_tile_left, H_cover, W_cover)
     
