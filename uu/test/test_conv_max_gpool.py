@@ -90,14 +90,13 @@ class Net(nn.Module):
                                         padding=(Ph,Pw),
                                         ) 
         self.mxp1 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
-        self.avgp = gavgpool2d.cGAvgPool2d()
         #self.gmaxp = gmaxpool2d.cGMaxPool2d()
         self.sft = nn.Softmax(dim=-1)
 
         self.tsplit = tilesplit.TiledSplit()
         self.tcopy = tilecopy.TiledCopy()
 
-        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2, self.mxp1, self.avgp]) #
+        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2, self.mxp1]) #
         
     # static  out_temp =None
     def forward(self, x, H, W, nTh, nTw):
@@ -121,7 +120,16 @@ class Net(nn.Module):
                
                 #out += self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
                 #print("out", out.size(), out)
-                out += checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
+                out_temp = self.block1(x, info, stream_structure[1], model_device, [nTh, nTw])
+
+                fake_pi = info[0][-11]
+                tile_shape = fake_pi.cur_output_shape
+                tile_size = [tile_shape[0], tile_shape[1]]
+                output_index = fake_pi.input_slice
+                print("corp output", tile_shape, tile_size, output_index)
+                out = self.tcopy(out_temp, out, output_index, tile_size)
+                del out_temp
+                del info
 
                 # if out_temp is not None:
                 #     print("out tile", out_temp.size(), out_temp)
@@ -164,48 +172,48 @@ def main():
     out = model(input, H, W, nTh, nTw )
 
 
-    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
-    print("~~ check forward correctness ~~")
-    print("out ref ", out_ref)
-    print("out  ", out)
-    correctness_check.check_equal(out, out_ref, False)
-    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    # print("~~ check forward correctness ~~")
+    # print("out ref ", out_ref)
+    # print("out  ", out)
+    # correctness_check.check_equal(out, out_ref, False)
+    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
 
-    out.sum().backward()
+    # out.sum().backward()
 
 
-    print("#### compare w1")
-    correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
+    # print("#### compare w1")
+    # correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
 
-    print("#### compare w2")
-    correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
-    print(model_ref.conv2d_2.weight.grad)
-
-
-    out_ref1 = model_ref(input_ref1)
-    out_ref1.sum().backward()
-
-    out1 = model(input1, H, W, nTh, nTw )
-
-    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
-    print("~~ check forward correctness ~~")
-    print("out ref ", out_ref1)
-    print("out  ", out1)
-
-    correctness_check.check_equal(out1, out_ref1, False)
-    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    # print("#### compare w2")
+    # correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
+    # print(model_ref.conv2d_2.weight.grad)
 
 
-    out1.sum().backward()
+    # out_ref1 = model_ref(input_ref1)
+    # out_ref1.sum().backward()
+
+    # out1 = model(input1, H, W, nTh, nTw )
+
+    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    # print("~~ check forward correctness ~~")
+    # print("out ref ", out_ref1)
+    # print("out  ", out1)
+
+    # correctness_check.check_equal(out1, out_ref1, False)
+    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
 
-    print("#### compare w1")
-    correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
+    # out1.sum().backward()
 
-    print("#### compare w2")
-    correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
-    print(model_ref.conv2d_2.weight.grad)
+
+    # print("#### compare w1")
+    # correctness_check.check_equal(model_ref.conv2d_1.weight.grad, model.conv2d_1.weight.grad, False)
+
+    # print("#### compare w2")
+    # correctness_check.check_equal(model_ref.conv2d_2.weight.grad, model.conv2d_2.weight.grad, False)
+    # print(model_ref.conv2d_2.weight.grad)
 
 
     
@@ -223,10 +231,10 @@ if __name__=="__main__":
 
 
 
-    H = 128
-    W = 256
+    H = 16
+    W = 16
     oH = H//2
     oW = W//2
-    nTh = 8
-    nTw = 4
+    nTh = 2
+    nTw = 2
     main()

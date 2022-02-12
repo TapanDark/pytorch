@@ -58,6 +58,6 @@ def check_equal(first, second, verbose):
             print("y = {}".format(y.flatten()))
             print('-' * 80)
         
-        #np.testing.assert_allclose(x, y, err_msg="Index: {}".format(i))
+        np.testing.assert_allclose(x, y, err_msg="Index: {}".format(i))
         
-        np.testing.assert_equal(x, y, err_msg="Index: {}".format(i))
+        #np.testing.assert_equal(x, y, err_msg="Index: {}".format(i))
