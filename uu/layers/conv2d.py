@@ -102,7 +102,7 @@ class TiledConv2dFunction(torch.autograd.Function):
                 next_id = c_info.next_id
                 #input_tile_for_next = padding_calc.recreate_input_tile_f(info, out, next_id)
                 out = padding_calc.recreate_input_tile_f(info, out, next_id)
-                print("== tiled conv2d forward / reg layer conv creat next")
+                print("*** tiled conv2d forward / reg layer conv creat next")
                 print("net_ out\n", out.size())
                 
             return out

@@ -11,14 +11,14 @@ from uu.utils import checkpoint
 import time
 
 
-Kh = Kw = 5
-Ph = Pw = 2
+Kh = Kw = 3
+Ph = Pw = 1
 b = 1
 c = 1
-h = w = 16
+h = w = 64
 out_ch = 1
 in_ch = 1
-nTh = nTw = 2
+nTh = nTw = 4
 strideH = 2
 
 
@@ -43,7 +43,7 @@ class Net_ref(nn.Module):
         #b1 = torch.tensor([-1000, -2000, -3000, -4000, -5000], dtype=torch.float)
         self.conv2d_1.weight = Parameter(w1)
         #self.conv2d_1.bias = Parameter(b1)
-        #self.conv2d_2.weight = Parameter(w2)
+        self.conv2d_2.weight = Parameter(w2)
         #self.conv2d_2.bias = Parameter(b2)
 
         #print("conv bias ref", self.conv2d_1.bias)
@@ -54,7 +54,7 @@ class Net_ref(nn.Module):
 
     def forward(self, x):
         out = self.conv2d_1(x)
-       # out = self.conv2d_2(out)
+        #out = self.conv2d_2(out)
         #print("out.shape final", out.size(), out)
         return out
 
@@ -174,10 +174,10 @@ def main():
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
     print("~~ check forward correctness ~~")
     correctness_check.check_equal(out, out_our, False)
-    print(out, out_our)
+    #print(out, out_our)
 
-    # print("#### compare w1")
-    # correctness_check.check_equal(model.conv2d_1.weight.grad, model_our.conv2d_1.weight.grad, False)
+    print("#### compare w1")
+    #correctness_check.check_equal(model.conv2d_1.weight.grad, model_our.conv2d_1.weight.grad, False)
 
     # print("#### compare b1")
     # correctness_check.check_equal(model.conv2d_1.bias.grad, model_our.conv2d_1.bias.grad, False)

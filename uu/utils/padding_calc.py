@@ -463,6 +463,7 @@ def reshape_grad_out_input_tensor_for_weight_update(grad_output, input_tensor, f
 
 #TODO can simplify
 def recreate_input_tile_f(info:Dict, input, next_id):
+    "Create zero padding for the next input "
     with torch.no_grad():
         pi = info[0][next_id]
         padding_info = pi.padding_info
@@ -548,8 +549,9 @@ def conv2d_revr_padding_stride_fwd_info(tile_indx: List, none_tiled_output_shape
     #input view in the padded global index field
     input_expand_top = tile_top * stride
     input_expand_left = tile_left * stride
-    input_expand_bottom = tile_bottom * stride  # included
-    input_expand_right = tile_right * stride  # included
+    #TODO: double check here!!!! + 1??
+    input_expand_bottom = int(math.ceil(tile_bottom * stride / 2)*2)  # included
+    input_expand_right = int(math.ceil(tile_right * stride / 2)*2) # included
 
 
     # cover - out_tile index
@@ -580,7 +582,10 @@ def conv2d_revr_padding_stride_fwd_info(tile_indx: List, none_tiled_output_shape
 
     # left , right, top, bottom; the naming is misleading; it means the relative index of current input view in its parent's view.
     # real index can have negative value and larger than iH,iW value, since it shows info one level up. 
-    real_index = [(tile_left-pads[1]), (tile_right+pads[1]), (tile_top-pads[0]), (tile_bottom+pads[0])]
+    #TODO: rea index rethink!!!
+    real_index = [x*stride for x in input_slice] # expand it and get parent index
+
+    #real_index = [(tile_left-pads[1]), (tile_right+pads[1]), (tile_top-pads[0]), (tile_bottom+pads[0])]
     # print("--tile_indx", tile_indx)
     # print("--input_slice", input_slice)
     # print("--real_index", real_index)
@@ -657,10 +662,12 @@ def conv2d_revr_padding_info_stride(tile_indx: List, none_tiled_output_shape, pa
     #input_tile view, the 4 point(l,r,t,b) in input tenser. Value is include [l, r], [t, b]
     # input for next op
     input_slice = [input_left, input_right, input_top, input_bottom]
-
+   
     # left , right, top, bottom; the naming is misleading; it means the relative index of current input view in its parent's view.
     # real index can have negative value and larger than iH,iW value, since it shows info one level up. 
-    real_index = [(tile_left-pads[1]), (tile_right+pads[1]), (tile_top-pads[0]), (tile_bottom+pads[0])]
+    #TODO: rea index rethink!!!
+    real_index = [math.floor(x / stride) for x in input_slice]
+    #real_index = [(tile_left-pads[1]), (tile_right+pads[1]), (tile_top-pads[0]), (tile_bottom+pads[0])]
 
     print("--input_slice", input_slice)
     print("--real_index", real_index)
@@ -674,7 +681,7 @@ def conv2d_revr_padding_info_stride(tile_indx: List, none_tiled_output_shape, pa
 
 # Assume conv2d input output are same shape
 def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: List, stride, RS):
-    #print("--", tile_indx, none_tiled_output_shape, pads, stride, RS)
+    print("st1--", tile_indx, none_tiled_output_shape, pads, stride, RS)
     #pdb.set_trace()
     oH = none_tiled_output_shape[2]
     oW = none_tiled_output_shape[3]
@@ -682,7 +689,8 @@ def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: Lis
     iW = (oW-1)*stride+RS-2*pads[1]
     # output view
 
-    print("OH IH", oH, iH)
+    print("st1--OH IH", oH, iH)
+
 
     tile_top = tile_indx[2]
     tile_bottom = tile_indx[3]
@@ -716,9 +724,9 @@ def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: Lis
     # left , right, top, bottom; the naming is misleading; it means the relative index of current input view in its parent's view.
     # real index can have negative value and larger than iH,iW value, since it shows info one level up. 
     real_index = [(tile_left-pads[1]), (tile_right+pads[1]), (tile_top-pads[0]), (tile_bottom+pads[0])]
-    # print("--tile_indx", tile_indx)
-    # print("--input_slice", input_slice)
-    # print("--real_index", real_index)
+    print("st1--tile_indx", tile_indx)
+    print("st1--input_slice", input_slice)
+    print("st1--real_index", real_index)
     return padding_info, input_slice, internal_expand, real_index
 
 
