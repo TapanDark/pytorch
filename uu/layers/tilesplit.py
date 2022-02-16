@@ -47,7 +47,7 @@ class TiledSplitFunction(torch.autograd.Function):
         #print("tsplit tile coor bkw??")
         # print("[split bkw] ctx.input_is_cuda ?? ", ctx.input_is_cuda)
         
-        if True or ctx.input_is_cuda:
+        if ctx.input_is_cuda:
             # create a cuda-tensor
             N = ctx.big_infput_shape[0]
             C = ctx.big_infput_shape[1]
