@@ -44,7 +44,7 @@ class TiledSplitFunction(torch.autograd.Function):
         b_info = ctx.info[1][-11]
         coord = b_info.input_slice
         global big_grad_in
-        print("tsplit tile coor bkw??")
+        #print("tsplit tile coor bkw??")
         # print("[split bkw] ctx.input_is_cuda ?? ", ctx.input_is_cuda)
         
         if True or ctx.input_is_cuda:
@@ -56,7 +56,7 @@ class TiledSplitFunction(torch.autograd.Function):
             if big_grad_in is None:
                 big_grad_in = torch.zeros(N, C, H, W).to(ctx.model_device)
             big_grad_in[:,:, coord[2]:coord[3]+1, coord[0]:coord[1]+1] = grad_output[:,:,0:H//ctx.num_tile[0], 0:W//ctx.num_tile[1]]
-            print("big_grad_in", big_grad_in)
+            #print("big_grad_in", big_grad_in)
 # if it a very begining input, we do not necessarily to pass it back.
         # else:
         #     N = ctx.big_infput_shape[0]

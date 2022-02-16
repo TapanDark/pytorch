@@ -19,7 +19,7 @@ h = w = 64
 out_ch = 1
 in_ch = 1
 nTh = nTw = 4
-strideH = 2
+strideH = 1
 
 
 
