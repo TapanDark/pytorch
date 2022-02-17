@@ -1,0 +1,1912 @@
+out torch.Size([1, 1, 16, 16])
+Inside Conv2d backward
+grad_output size :  torch.Size([1, 1, 16, 16])
+grad_input size :  tensor([[[[ 0.0081, -0.1702,  0.0023,  ..., -0.0233, -0.0004,  0.0061],
+          [ 0.1586,  0.3333,  0.0879,  ...,  0.1360,  0.1034,  0.0804],
+          [ 0.0061, -0.1761,  0.0038,  ..., -0.1736,  0.0051, -0.0729],
+          ...,
+          [ 0.0569,  0.2101,  0.0354,  ...,  0.1656,  0.0823,  0.1723],
+          [ 0.0016, -0.0449,  0.0010,  ..., -0.0837,  0.0030, -0.0427],
+          [ 0.0063,  0.0457,  0.0039,  ...,  0.0512,  0.0121,  0.0699]]]],
+       device='cuda:0')
+
+&&&&&&&&&&&&&&&&&&& OUR forward &&&&&&&&&&&&&&&&&&&
+
+!!!!!!! 1 1 16 16
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [0, 0]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 0 7 0 7
+shf_tile_top 1 8 1 8
+Oh, Ow 32 32
+H_cover 0 0 [0, 4] [0, 4]
+out_tile_top 0 3
+--input_slice [0, 4, 0, 4]
+--real_index [0, 2, 0, 2]
+--padding_info [1, 2, 1, 2]
+--internal_expand [0, 0, 0, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [0, 2, 0, 2] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 2, 0, 2]
+st1--input_slice [0, 3, 0, 3]
+st1--real_index [-1, 3, -1, 3]
+bwd_out_shape  (4, 4)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [0, 3, 0, 3] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 3, 0, 3]
+st1--input_slice [0, 4, 0, 4]
+st1--real_index [-1, 4, -1, 4]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top -1 4 -1 4
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <0,0,>,
+ <otileshape 4,4,>,
+ <padding >,
+ <inpslidx 0,3,0,3,>, 
+ <internal >, 
+ <realidx 0,3,0,3,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <0,0,>,
+ <otileshape 4,4,>,
+ <padding 1,0,1,0,>,
+ <inpslidx 0,4,0,4,>, 
+ <internal 0,1,0,1,>, 
+ <realidx -1,4,-1,4,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <0,0,>,
+ <otileshape 5,5,>,
+ <padding 3,0,3,0,>,
+ <inpslidx 0,9,0,9,>, 
+ <internal 0,1,0,1,>, 
+ <realidx 0,18,0,18,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <0,0,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 0,7,0,7,>, 
+ <internal >, 
+ <realidx 0,7,0,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <0,0,>,
+ <otileshape 5,5,>,
+ <padding 1,2,1,2,>,
+ <inpslidx 0,4,0,4,>, 
+ <internal 0,0,0,0,>, 
+ <realidx 0,2,0,2,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <0,0,>,
+ <otileshape 4,4,>,
+ <padding 1,0,1,0,>,
+ <inpslidx 0,3,0,3,>, 
+ <internal 0,1,0,1,>, 
+ <realidx -1,3,-1,3,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 10, 10]) (2, 2)
+after padding input size torch.Size([1, 1, 13, 13])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 6, 6])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 6, 6]) (1, 1)
+after padding input size torch.Size([1, 1, 6, 6])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 4, 4])
+net_ out
+ torch.Size([1, 1, 4, 4])
+corp output (4, 4) [4, 4] [0, 3, 0, 3]
+coord [0, 3, 0, 3]
+out_temp torch.Size([1, 1, 4, 4]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [0, 1]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 0 7 8 15
+shf_tile_top 1 8 9 16
+Oh, Ow 32 32
+H_cover 0 8 [0, 4] [3, 8]
+out_tile_top 0 3
+--input_slice [3, 8, 0, 4]
+--real_index [1, 4, 0, 2]
+--padding_info [0, 2, 1, 2]
+--internal_expand [1, 0, 0, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [1, 4, 0, 2] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [1, 4, 0, 2]
+st1--input_slice [0, 5, 0, 3]
+st1--real_index [0, 5, -1, 3]
+bwd_out_shape  (6, 4)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [0, 5, 0, 3] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 5, 0, 3]
+st1--input_slice [0, 6, 0, 4]
+st1--real_index [-1, 6, -1, 4]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top -1 4 -1 6
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <0,1,>,
+ <otileshape 6,4,>,
+ <padding >,
+ <inpslidx 0,5,0,3,>, 
+ <internal >, 
+ <realidx 0,5,0,3,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <0,1,>,
+ <otileshape 6,4,>,
+ <padding 1,0,1,0,>,
+ <inpslidx 0,6,0,4,>, 
+ <internal 0,1,0,1,>, 
+ <realidx -1,6,-1,4,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <0,1,>,
+ <otileshape 7,5,>,
+ <padding 3,0,3,0,>,
+ <inpslidx 0,13,0,9,>, 
+ <internal 0,1,0,1,>, 
+ <realidx 0,26,0,18,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <0,1,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 8,15,0,7,>, 
+ <internal >, 
+ <realidx 8,15,0,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <0,1,>,
+ <otileshape 6,5,>,
+ <padding 0,2,1,2,>,
+ <inpslidx 3,8,0,4,>, 
+ <internal 1,0,0,0,>, 
+ <realidx 1,4,0,2,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <0,1,>,
+ <otileshape 6,4,>,
+ <padding 0,0,1,0,>,
+ <inpslidx 0,5,0,3,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 0,5,-1,3,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 10, 14]) (2, 2)
+after padding input size torch.Size([1, 1, 13, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 6, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 6, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 6, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 4, 6])
+net_ out
+ torch.Size([1, 1, 4, 6])
+corp output (6, 4) [6, 4] [0, 5, 0, 3]
+coord [0, 5, 0, 3]
+out_temp torch.Size([1, 1, 4, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [0, 2]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 0 7 16 23
+shf_tile_top 1 8 17 24
+Oh, Ow 32 32
+H_cover 0 16 [0, 4] [7, 12]
+out_tile_top 0 3
+--input_slice [7, 12, 0, 4]
+--real_index [3, 6, 0, 2]
+--padding_info [0, 2, 1, 2]
+--internal_expand [1, 0, 0, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [3, 6, 0, 2] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [3, 6, 0, 2]
+st1--input_slice [2, 7, 0, 3]
+st1--real_index [2, 7, -1, 3]
+bwd_out_shape  (6, 4)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [2, 7, 0, 3] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [2, 7, 0, 3]
+st1--input_slice [1, 8, 0, 4]
+st1--real_index [1, 8, -1, 4]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top -1 4 1 8
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <0,2,>,
+ <otileshape 6,4,>,
+ <padding >,
+ <inpslidx 2,7,0,3,>, 
+ <internal >, 
+ <realidx 2,7,0,3,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <0,2,>,
+ <otileshape 6,4,>,
+ <padding 0,0,1,0,>,
+ <inpslidx 1,8,0,4,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 1,8,-1,4,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <0,2,>,
+ <otileshape 8,5,>,
+ <padding 0,0,3,0,>,
+ <inpslidx 1,17,0,9,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 2,34,0,18,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <0,2,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 16,23,0,7,>, 
+ <internal >, 
+ <realidx 16,23,0,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <0,2,>,
+ <otileshape 6,5,>,
+ <padding 0,2,1,2,>,
+ <inpslidx 7,12,0,4,>, 
+ <internal 1,0,0,0,>, 
+ <realidx 3,6,0,2,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <0,2,>,
+ <otileshape 6,4,>,
+ <padding 0,0,1,0,>,
+ <inpslidx 2,7,0,3,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 2,7,-1,3,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 10, 17]) (2, 2)
+after padding input size torch.Size([1, 1, 13, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 6, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 6, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 6, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 4, 6])
+net_ out
+ torch.Size([1, 1, 4, 6])
+corp output (6, 4) [6, 4] [2, 7, 0, 3]
+coord [2, 7, 0, 3]
+out_temp torch.Size([1, 1, 4, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [0, 3]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 0 7 24 31
+shf_tile_top 1 8 25 32
+Oh, Ow 32 32
+H_cover 0 24 [0, 4] [11, 16]
+out_tile_top 0 3
+--input_slice [11, 16, 0, 4]
+--real_index [5, 8, 0, 2]
+--padding_info [0, 2, 1, 2]
+--internal_expand [1, 0, 0, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [5, 8, 0, 2] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [5, 8, 0, 2]
+st1--input_slice [4, 9, 0, 3]
+st1--real_index [4, 9, -1, 3]
+bwd_out_shape  (6, 4)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [4, 9, 0, 3] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [4, 9, 0, 3]
+st1--input_slice [3, 10, 0, 4]
+st1--real_index [3, 10, -1, 4]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top -1 4 3 10
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <0,3,>,
+ <otileshape 6,4,>,
+ <padding >,
+ <inpslidx 4,9,0,3,>, 
+ <internal >, 
+ <realidx 4,9,0,3,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <0,3,>,
+ <otileshape 6,4,>,
+ <padding 0,0,1,0,>,
+ <inpslidx 3,10,0,4,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 3,10,-1,4,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <0,3,>,
+ <otileshape 8,5,>,
+ <padding 0,0,3,0,>,
+ <inpslidx 5,21,0,9,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 10,42,0,18,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <0,3,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 24,31,0,7,>, 
+ <internal >, 
+ <realidx 24,31,0,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <0,3,>,
+ <otileshape 6,5,>,
+ <padding 0,2,1,2,>,
+ <inpslidx 11,16,0,4,>, 
+ <internal 1,0,0,0,>, 
+ <realidx 5,8,0,2,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <0,3,>,
+ <otileshape 6,4,>,
+ <padding 0,0,1,0,>,
+ <inpslidx 4,9,0,3,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 4,9,-1,3,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 10, 17]) (2, 2)
+after padding input size torch.Size([1, 1, 13, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 6, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 6, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 6, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 4, 6])
+net_ out
+ torch.Size([1, 1, 4, 6])
+corp output (6, 4) [6, 4] [4, 9, 0, 3]
+coord [4, 9, 0, 3]
+out_temp torch.Size([1, 1, 4, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [1, 0]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 8 15 0 7
+shf_tile_top 9 16 1 8
+Oh, Ow 32 32
+H_cover 8 0 [3, 8] [0, 4]
+out_tile_top 4 7
+--input_slice [0, 4, 3, 8]
+--real_index [0, 2, 1, 4]
+--padding_info [1, 2, 0, 2]
+--internal_expand [0, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [0, 2, 1, 4] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 2, 1, 4]
+st1--input_slice [0, 3, 0, 5]
+st1--real_index [-1, 3, 0, 5]
+bwd_out_shape  (4, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [0, 3, 0, 5] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 3, 0, 5]
+st1--input_slice [0, 4, 0, 6]
+st1--real_index [-1, 4, -1, 6]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top -1 6 -1 4
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <1,0,>,
+ <otileshape 4,6,>,
+ <padding >,
+ <inpslidx 0,3,0,5,>, 
+ <internal >, 
+ <realidx 0,3,0,5,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <1,0,>,
+ <otileshape 4,6,>,
+ <padding 1,0,1,0,>,
+ <inpslidx 0,4,0,6,>, 
+ <internal 0,1,0,1,>, 
+ <realidx -1,4,-1,6,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <1,0,>,
+ <otileshape 5,7,>,
+ <padding 3,0,3,0,>,
+ <inpslidx 0,9,0,13,>, 
+ <internal 0,1,0,1,>, 
+ <realidx 0,18,0,26,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <1,0,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 0,7,8,15,>, 
+ <internal >, 
+ <realidx 0,7,8,15,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <1,0,>,
+ <otileshape 5,6,>,
+ <padding 1,2,0,2,>,
+ <inpslidx 0,4,3,8,>, 
+ <internal 0,0,1,0,>, 
+ <realidx 0,2,1,4,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <1,0,>,
+ <otileshape 4,6,>,
+ <padding 1,0,0,0,>,
+ <inpslidx 0,3,0,5,>, 
+ <internal 0,1,1,1,>, 
+ <realidx -1,3,0,5,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 14, 10]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 13])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 6])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 6]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 6])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 4])
+net_ out
+ torch.Size([1, 1, 6, 4])
+corp output (4, 6) [4, 6] [0, 3, 0, 5]
+coord [0, 3, 0, 5]
+out_temp torch.Size([1, 1, 6, 4]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [1, 1]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 8 15 8 15
+shf_tile_top 9 16 9 16
+Oh, Ow 32 32
+H_cover 8 8 [3, 8] [3, 8]
+out_tile_top 4 7
+--input_slice [3, 8, 3, 8]
+--real_index [1, 4, 1, 4]
+--padding_info [0, 2, 0, 2]
+--internal_expand [1, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [1, 4, 1, 4] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [1, 4, 1, 4]
+st1--input_slice [0, 5, 0, 5]
+st1--real_index [0, 5, 0, 5]
+bwd_out_shape  (6, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [0, 5, 0, 5] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 5, 0, 5]
+st1--input_slice [0, 6, 0, 6]
+st1--real_index [-1, 6, -1, 6]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top -1 6 -1 6
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <1,1,>,
+ <otileshape 6,6,>,
+ <padding >,
+ <inpslidx 0,5,0,5,>, 
+ <internal >, 
+ <realidx 0,5,0,5,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <1,1,>,
+ <otileshape 6,6,>,
+ <padding 1,0,1,0,>,
+ <inpslidx 0,6,0,6,>, 
+ <internal 0,1,0,1,>, 
+ <realidx -1,6,-1,6,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <1,1,>,
+ <otileshape 7,7,>,
+ <padding 3,0,3,0,>,
+ <inpslidx 0,13,0,13,>, 
+ <internal 0,1,0,1,>, 
+ <realidx 0,26,0,26,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <1,1,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 8,15,8,15,>, 
+ <internal >, 
+ <realidx 8,15,8,15,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <1,1,>,
+ <otileshape 6,6,>,
+ <padding 0,2,0,2,>,
+ <inpslidx 3,8,3,8,>, 
+ <internal 1,0,1,0,>, 
+ <realidx 1,4,1,4,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <1,1,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 0,5,0,5,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 0,5,0,5,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 14, 14]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 6])
+net_ out
+ torch.Size([1, 1, 6, 6])
+corp output (6, 6) [6, 6] [0, 5, 0, 5]
+coord [0, 5, 0, 5]
+out_temp torch.Size([1, 1, 6, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [1, 2]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 8 15 16 23
+shf_tile_top 9 16 17 24
+Oh, Ow 32 32
+H_cover 8 16 [3, 8] [7, 12]
+out_tile_top 4 7
+--input_slice [7, 12, 3, 8]
+--real_index [3, 6, 1, 4]
+--padding_info [0, 2, 0, 2]
+--internal_expand [1, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [3, 6, 1, 4] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [3, 6, 1, 4]
+st1--input_slice [2, 7, 0, 5]
+st1--real_index [2, 7, 0, 5]
+bwd_out_shape  (6, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [2, 7, 0, 5] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [2, 7, 0, 5]
+st1--input_slice [1, 8, 0, 6]
+st1--real_index [1, 8, -1, 6]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top -1 6 1 8
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <1,2,>,
+ <otileshape 6,6,>,
+ <padding >,
+ <inpslidx 2,7,0,5,>, 
+ <internal >, 
+ <realidx 2,7,0,5,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <1,2,>,
+ <otileshape 6,6,>,
+ <padding 0,0,1,0,>,
+ <inpslidx 1,8,0,6,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 1,8,-1,6,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <1,2,>,
+ <otileshape 8,7,>,
+ <padding 0,0,3,0,>,
+ <inpslidx 1,17,0,13,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 2,34,0,26,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <1,2,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 16,23,8,15,>, 
+ <internal >, 
+ <realidx 16,23,8,15,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <1,2,>,
+ <otileshape 6,6,>,
+ <padding 0,2,0,2,>,
+ <inpslidx 7,12,3,8,>, 
+ <internal 1,0,1,0,>, 
+ <realidx 3,6,1,4,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <1,2,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 2,7,0,5,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 2,7,0,5,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 14, 17]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 6])
+net_ out
+ torch.Size([1, 1, 6, 6])
+corp output (6, 6) [6, 6] [2, 7, 0, 5]
+coord [2, 7, 0, 5]
+out_temp torch.Size([1, 1, 6, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [1, 3]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 8 15 24 31
+shf_tile_top 9 16 25 32
+Oh, Ow 32 32
+H_cover 8 24 [3, 8] [11, 16]
+out_tile_top 4 7
+--input_slice [11, 16, 3, 8]
+--real_index [5, 8, 1, 4]
+--padding_info [0, 2, 0, 2]
+--internal_expand [1, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [5, 8, 1, 4] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [5, 8, 1, 4]
+st1--input_slice [4, 9, 0, 5]
+st1--real_index [4, 9, 0, 5]
+bwd_out_shape  (6, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [4, 9, 0, 5] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [4, 9, 0, 5]
+st1--input_slice [3, 10, 0, 6]
+st1--real_index [3, 10, -1, 6]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top -1 6 3 10
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <1,3,>,
+ <otileshape 6,6,>,
+ <padding >,
+ <inpslidx 4,9,0,5,>, 
+ <internal >, 
+ <realidx 4,9,0,5,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <1,3,>,
+ <otileshape 6,6,>,
+ <padding 0,0,1,0,>,
+ <inpslidx 3,10,0,6,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 3,10,-1,6,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <1,3,>,
+ <otileshape 8,7,>,
+ <padding 0,0,3,0,>,
+ <inpslidx 5,21,0,13,>, 
+ <internal 1,1,0,1,>, 
+ <realidx 10,42,0,26,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <1,3,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 24,31,8,15,>, 
+ <internal >, 
+ <realidx 24,31,8,15,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <1,3,>,
+ <otileshape 6,6,>,
+ <padding 0,2,0,2,>,
+ <inpslidx 11,16,3,8,>, 
+ <internal 1,0,1,0,>, 
+ <realidx 5,8,1,4,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <1,3,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 4,9,0,5,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 4,9,0,5,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 14, 17]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 6])
+net_ out
+ torch.Size([1, 1, 6, 6])
+corp output (6, 6) [6, 6] [4, 9, 0, 5]
+coord [4, 9, 0, 5]
+out_temp torch.Size([1, 1, 6, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [2, 0]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 16 23 0 7
+shf_tile_top 17 24 1 8
+Oh, Ow 32 32
+H_cover 16 0 [7, 12] [0, 4]
+out_tile_top 8 11
+--input_slice [0, 4, 7, 12]
+--real_index [0, 2, 3, 6]
+--padding_info [1, 2, 0, 2]
+--internal_expand [0, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [0, 2, 3, 6] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 2, 3, 6]
+st1--input_slice [0, 3, 2, 7]
+st1--real_index [-1, 3, 2, 7]
+bwd_out_shape  (4, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [0, 3, 2, 7] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 3, 2, 7]
+st1--input_slice [0, 4, 1, 8]
+st1--real_index [-1, 4, 1, 8]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top 1 8 -1 4
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <2,0,>,
+ <otileshape 4,6,>,
+ <padding >,
+ <inpslidx 0,3,2,7,>, 
+ <internal >, 
+ <realidx 0,3,2,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <2,0,>,
+ <otileshape 4,6,>,
+ <padding 1,0,0,0,>,
+ <inpslidx 0,4,1,8,>, 
+ <internal 0,1,1,1,>, 
+ <realidx -1,4,1,8,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <2,0,>,
+ <otileshape 5,8,>,
+ <padding 3,0,0,0,>,
+ <inpslidx 0,9,1,17,>, 
+ <internal 0,1,1,1,>, 
+ <realidx 0,18,2,34,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <2,0,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 0,7,16,23,>, 
+ <internal >, 
+ <realidx 0,7,16,23,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <2,0,>,
+ <otileshape 5,6,>,
+ <padding 1,2,0,2,>,
+ <inpslidx 0,4,7,12,>, 
+ <internal 0,0,1,0,>, 
+ <realidx 0,2,3,6,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <2,0,>,
+ <otileshape 4,6,>,
+ <padding 1,0,0,0,>,
+ <inpslidx 0,3,2,7,>, 
+ <internal 0,1,1,1,>, 
+ <realidx -1,3,2,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 17, 10]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 13])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 6])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 6]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 6])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 4])
+net_ out
+ torch.Size([1, 1, 6, 4])
+corp output (4, 6) [4, 6] [0, 3, 2, 7]
+coord [0, 3, 2, 7]
+out_temp torch.Size([1, 1, 6, 4]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [2, 1]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 16 23 8 15
+shf_tile_top 17 24 9 16
+Oh, Ow 32 32
+H_cover 16 8 [7, 12] [3, 8]
+out_tile_top 8 11
+--input_slice [3, 8, 7, 12]
+--real_index [1, 4, 3, 6]
+--padding_info [0, 2, 0, 2]
+--internal_expand [1, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [1, 4, 3, 6] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [1, 4, 3, 6]
+st1--input_slice [0, 5, 2, 7]
+st1--real_index [0, 5, 2, 7]
+bwd_out_shape  (6, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [0, 5, 2, 7] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 5, 2, 7]
+st1--input_slice [0, 6, 1, 8]
+st1--real_index [-1, 6, 1, 8]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top 1 8 -1 6
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <2,1,>,
+ <otileshape 6,6,>,
+ <padding >,
+ <inpslidx 0,5,2,7,>, 
+ <internal >, 
+ <realidx 0,5,2,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <2,1,>,
+ <otileshape 6,6,>,
+ <padding 1,0,0,0,>,
+ <inpslidx 0,6,1,8,>, 
+ <internal 0,1,1,1,>, 
+ <realidx -1,6,1,8,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <2,1,>,
+ <otileshape 7,8,>,
+ <padding 3,0,0,0,>,
+ <inpslidx 0,13,1,17,>, 
+ <internal 0,1,1,1,>, 
+ <realidx 0,26,2,34,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <2,1,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 8,15,16,23,>, 
+ <internal >, 
+ <realidx 8,15,16,23,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <2,1,>,
+ <otileshape 6,6,>,
+ <padding 0,2,0,2,>,
+ <inpslidx 3,8,7,12,>, 
+ <internal 1,0,1,0,>, 
+ <realidx 1,4,3,6,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <2,1,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 0,5,2,7,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 0,5,2,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 17, 14]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 6])
+net_ out
+ torch.Size([1, 1, 6, 6])
+corp output (6, 6) [6, 6] [0, 5, 2, 7]
+coord [0, 5, 2, 7]
+out_temp torch.Size([1, 1, 6, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [2, 2]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 16 23 16 23
+shf_tile_top 17 24 17 24
+Oh, Ow 32 32
+H_cover 16 16 [7, 12] [7, 12]
+out_tile_top 8 11
+--input_slice [7, 12, 7, 12]
+--real_index [3, 6, 3, 6]
+--padding_info [0, 2, 0, 2]
+--internal_expand [1, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [3, 6, 3, 6] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [3, 6, 3, 6]
+st1--input_slice [2, 7, 2, 7]
+st1--real_index [2, 7, 2, 7]
+bwd_out_shape  (6, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [2, 7, 2, 7] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [2, 7, 2, 7]
+st1--input_slice [1, 8, 1, 8]
+st1--real_index [1, 8, 1, 8]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top 1 8 1 8
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <2,2,>,
+ <otileshape 6,6,>,
+ <padding >,
+ <inpslidx 2,7,2,7,>, 
+ <internal >, 
+ <realidx 2,7,2,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <2,2,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 1,8,1,8,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 1,8,1,8,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <2,2,>,
+ <otileshape 8,8,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 1,17,1,17,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 2,34,2,34,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <2,2,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 16,23,16,23,>, 
+ <internal >, 
+ <realidx 16,23,16,23,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <2,2,>,
+ <otileshape 6,6,>,
+ <padding 0,2,0,2,>,
+ <inpslidx 7,12,7,12,>, 
+ <internal 1,0,1,0,>, 
+ <realidx 3,6,3,6,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <2,2,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 2,7,2,7,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 2,7,2,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 17, 17]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 6])
+net_ out
+ torch.Size([1, 1, 6, 6])
+corp output (6, 6) [6, 6] [2, 7, 2, 7]
+coord [2, 7, 2, 7]
+out_temp torch.Size([1, 1, 6, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [2, 3]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 16 23 24 31
+shf_tile_top 17 24 25 32
+Oh, Ow 32 32
+H_cover 16 24 [7, 12] [11, 16]
+out_tile_top 8 11
+--input_slice [11, 16, 7, 12]
+--real_index [5, 8, 3, 6]
+--padding_info [0, 2, 0, 2]
+--internal_expand [1, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [5, 8, 3, 6] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [5, 8, 3, 6]
+st1--input_slice [4, 9, 2, 7]
+st1--real_index [4, 9, 2, 7]
+bwd_out_shape  (6, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [4, 9, 2, 7] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [4, 9, 2, 7]
+st1--input_slice [3, 10, 1, 8]
+st1--real_index [3, 10, 1, 8]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top 1 8 3 10
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <2,3,>,
+ <otileshape 6,6,>,
+ <padding >,
+ <inpslidx 4,9,2,7,>, 
+ <internal >, 
+ <realidx 4,9,2,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <2,3,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 3,10,1,8,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 3,10,1,8,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <2,3,>,
+ <otileshape 8,8,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 5,21,1,17,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 10,42,2,34,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <2,3,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 24,31,16,23,>, 
+ <internal >, 
+ <realidx 24,31,16,23,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <2,3,>,
+ <otileshape 6,6,>,
+ <padding 0,2,0,2,>,
+ <inpslidx 11,16,7,12,>, 
+ <internal 1,0,1,0,>, 
+ <realidx 5,8,3,6,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <2,3,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 4,9,2,7,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 4,9,2,7,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 17, 17]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 6])
+net_ out
+ torch.Size([1, 1, 6, 6])
+corp output (6, 6) [6, 6] [4, 9, 2, 7]
+coord [4, 9, 2, 7]
+out_temp torch.Size([1, 1, 6, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [3, 0]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 24 31 0 7
+shf_tile_top 25 32 1 8
+Oh, Ow 32 32
+H_cover 24 0 [11, 16] [0, 4]
+out_tile_top 12 15
+--input_slice [0, 4, 11, 16]
+--real_index [0, 2, 5, 8]
+--padding_info [1, 2, 0, 2]
+--internal_expand [0, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [0, 2, 5, 8] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 2, 5, 8]
+st1--input_slice [0, 3, 4, 9]
+st1--real_index [-1, 3, 4, 9]
+bwd_out_shape  (4, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [0, 3, 4, 9] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 3, 4, 9]
+st1--input_slice [0, 4, 3, 10]
+st1--real_index [-1, 4, 3, 10]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top 3 10 -1 4
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <3,0,>,
+ <otileshape 4,6,>,
+ <padding >,
+ <inpslidx 0,3,4,9,>, 
+ <internal >, 
+ <realidx 0,3,4,9,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <3,0,>,
+ <otileshape 4,6,>,
+ <padding 1,0,0,0,>,
+ <inpslidx 0,4,3,10,>, 
+ <internal 0,1,1,1,>, 
+ <realidx -1,4,3,10,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <3,0,>,
+ <otileshape 5,8,>,
+ <padding 3,0,0,0,>,
+ <inpslidx 0,9,5,21,>, 
+ <internal 0,1,1,1,>, 
+ <realidx 0,18,10,42,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <3,0,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 0,7,24,31,>, 
+ <internal >, 
+ <realidx 0,7,24,31,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <3,0,>,
+ <otileshape 5,6,>,
+ <padding 1,2,0,2,>,
+ <inpslidx 0,4,11,16,>, 
+ <internal 0,0,1,0,>, 
+ <realidx 0,2,5,8,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <3,0,>,
+ <otileshape 4,6,>,
+ <padding 1,0,0,0,>,
+ <inpslidx 0,3,4,9,>, 
+ <internal 0,1,1,1,>, 
+ <realidx -1,3,4,9,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 17, 10]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 13])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 6])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 6]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 6])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 4])
+net_ out
+ torch.Size([1, 1, 6, 4])
+corp output (4, 6) [4, 6] [0, 3, 4, 9]
+coord [0, 3, 4, 9]
+out_temp torch.Size([1, 1, 6, 4]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [3, 1]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 24 31 8 15
+shf_tile_top 25 32 9 16
+Oh, Ow 32 32
+H_cover 24 8 [11, 16] [3, 8]
+out_tile_top 12 15
+--input_slice [3, 8, 11, 16]
+--real_index [1, 4, 5, 8]
+--padding_info [0, 2, 0, 2]
+--internal_expand [1, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [1, 4, 5, 8] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [1, 4, 5, 8]
+st1--input_slice [0, 5, 4, 9]
+st1--real_index [0, 5, 4, 9]
+bwd_out_shape  (6, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [0, 5, 4, 9] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [0, 5, 4, 9]
+st1--input_slice [0, 6, 3, 10]
+st1--real_index [-1, 6, 3, 10]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top 3 10 -1 6
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <3,1,>,
+ <otileshape 6,6,>,
+ <padding >,
+ <inpslidx 0,5,4,9,>, 
+ <internal >, 
+ <realidx 0,5,4,9,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <3,1,>,
+ <otileshape 6,6,>,
+ <padding 1,0,0,0,>,
+ <inpslidx 0,6,3,10,>, 
+ <internal 0,1,1,1,>, 
+ <realidx -1,6,3,10,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <3,1,>,
+ <otileshape 7,8,>,
+ <padding 3,0,0,0,>,
+ <inpslidx 0,13,5,21,>, 
+ <internal 0,1,1,1,>, 
+ <realidx 0,26,10,42,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <3,1,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 8,15,24,31,>, 
+ <internal >, 
+ <realidx 8,15,24,31,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <3,1,>,
+ <otileshape 6,6,>,
+ <padding 0,2,0,2,>,
+ <inpslidx 3,8,11,16,>, 
+ <internal 1,0,1,0,>, 
+ <realidx 1,4,5,8,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <3,1,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 0,5,4,9,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 0,5,4,9,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 17, 14]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 6])
+net_ out
+ torch.Size([1, 1, 6, 6])
+corp output (6, 6) [6, 6] [0, 5, 4, 9]
+coord [0, 5, 4, 9]
+out_temp torch.Size([1, 1, 6, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [3, 2]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 24 31 16 23
+shf_tile_top 25 32 17 24
+Oh, Ow 32 32
+H_cover 24 16 [11, 16] [7, 12]
+out_tile_top 12 15
+--input_slice [7, 12, 11, 16]
+--real_index [3, 6, 5, 8]
+--padding_info [0, 2, 0, 2]
+--internal_expand [1, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [3, 6, 5, 8] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [3, 6, 5, 8]
+st1--input_slice [2, 7, 4, 9]
+st1--real_index [2, 7, 4, 9]
+bwd_out_shape  (6, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [2, 7, 4, 9] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [2, 7, 4, 9]
+st1--input_slice [1, 8, 3, 10]
+st1--real_index [1, 8, 3, 10]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top 3 10 1 8
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <3,2,>,
+ <otileshape 6,6,>,
+ <padding >,
+ <inpslidx 2,7,4,9,>, 
+ <internal >, 
+ <realidx 2,7,4,9,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <3,2,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 1,8,3,10,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 1,8,3,10,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <3,2,>,
+ <otileshape 8,8,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 1,17,5,21,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 2,34,10,42,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <3,2,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 16,23,24,31,>, 
+ <internal >, 
+ <realidx 16,23,24,31,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <3,2,>,
+ <otileshape 6,6,>,
+ <padding 0,2,0,2,>,
+ <inpslidx 7,12,11,16,>, 
+ <internal 1,0,1,0,>, 
+ <realidx 3,6,5,8,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <3,2,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 2,7,4,9,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 2,7,4,9,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 17, 17]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 6])
+net_ out
+ torch.Size([1, 1, 6, 6])
+corp output (6, 6) [6, 6] [2, 7, 4, 9]
+coord [2, 7, 4, 9]
+out_temp torch.Size([1, 1, 6, 6]) torch.Size([1, 1, 16, 16])
+++++++++++++++++++++++++++++++++++++++++++++++++
+coord [3, 3]
+AA 32 32
+BB ph 1, none_tiled_input_shape (1, 1, 32, 32)
+tile_top 24 31 24 31
+shf_tile_top 25 32 25 32
+Oh, Ow 32 32
+H_cover 24 24 [11, 16] [11, 16]
+out_tile_top 12 15
+--input_slice [11, 16, 11, 16]
+--real_index [5, 8, 5, 8]
+--padding_info [0, 2, 0, 2]
+--internal_expand [1, 0, 1, 0]
+BB ph 1, none_tiled_input_shape (1, 1, 16, 16)
+st1-- [5, 8, 5, 8] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [5, 8, 5, 8]
+st1--input_slice [4, 9, 4, 9]
+st1--real_index [4, 9, 4, 9]
+bwd_out_shape  (6, 6)
+fwd_out_shape  (4, 4)
+total_conv2d_in_seg 2 2
+st1-- [4, 9, 4, 9] (1, 1, 16, 16) [1, 1] 1 3
+st1--OH IH 16 16
+st1--tile_indx [4, 9, 4, 9]
+st1--input_slice [3, 10, 3, 10]
+st1--real_index [3, 10, 3, 10]
+fwsinfo Oh, Ow 16 16
+fwdinfo tile_top 3 10 3 10
+------------------------------
+f_info {-11: fake[-11,-11]
+ PI( <3,3,>,
+ <otileshape 6,6,>,
+ <padding >,
+ <inpslidx 4,9,4,9,>, 
+ <internal >, 
+ <realidx 4,9,4,9,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -11
+ numof tiles 4,4, ) 
+, 140058468303776: conv2d140058468303776[0,0]
+ PI( <3,3,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 3,10,3,10,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 3,10,3,10,>, 
+ <ndtsize 4,4,>, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468305264: conv2d140058468305264[1,1]
+ PI( <3,3,>,
+ <otileshape 8,8,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 5,21,5,21,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 10,42,10,42,>, 
+ <ndtsize 4,4,>, 
+  local_first True
+ next_id 140058468303776
+ numof tiles 4,4, ) 
+}
+------------------------------
+b_info {-11: fake-grad-IN[-11,-11]
+ PI( <3,3,>,
+ <otileshape 8,8,>,
+ <padding >,
+ <inpslidx 24,31,24,31,>, 
+ <internal >, 
+ <realidx 24,31,24,31,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -101
+ numof tiles 4,4, ) 
+, 140058468305264: bk-conv2d140058468305264[0,0]
+ PI( <3,3,>,
+ <otileshape 6,6,>,
+ <padding 0,2,0,2,>,
+ <inpslidx 11,16,11,16,>, 
+ <internal 1,0,1,0,>, 
+ <realidx 5,8,5,8,>, 
+ <ndtsize >, 
+  local_first False
+ next_id -99
+ numof tiles 4,4, ) 
+, 140058468303776: bk-conv2d140058468303776[1,1]
+ PI( <3,3,>,
+ <otileshape 6,6,>,
+ <padding 0,0,0,0,>,
+ <inpslidx 4,9,4,9,>, 
+ <internal 1,1,1,1,>, 
+ <realidx 4,9,4,9,>, 
+ <ndtsize >, 
+  local_first False
+ next_id 140058468305264
+ numof tiles 4,4, ) 
+}
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 17, 17]) (2, 2)
+after padding input size torch.Size([1, 1, 17, 17])
+*** tiled conv2d forward / reg layer conv creat next
+net_ out
+ torch.Size([1, 1, 8, 8])
+~~~~~~~~~~~~~~TiledConv2dFunction #####
+current input size torch.Size([1, 1, 8, 8]) (1, 1)
+after padding input size torch.Size([1, 1, 8, 8])
+== tiled conv2d forward / last layer conv compute nonchp (1, 1) torch.Size([1, 1, 3, 3])
+shape input_tile_for_next
+ torch.Size([1, 1, 6, 6])
+net_ out
+ torch.Size([1, 1, 6, 6])
+corp output (6, 6) [6, 6] [4, 9, 4, 9]
+coord [4, 9, 4, 9]
+out_temp torch.Size([1, 1, 6, 6]) torch.Size([1, 1, 16, 16])
+--------------------------------------------------
+@@@ using cudnn bkw
+ouput grad ++ input shape torch.Size([1, 1, 8, 8])
+weight shape torch.Size([1, 1, 3, 3])
+grad_output shape torch.Size([1, 1, 16, 16])
+new_grad_out shape torch.Size([1, 1, 6, 6])
+grad_input old torch.Size([1, 1, 8, 8]) tensor([[[[-0.0553, -0.3464, -0.2165, -0.2165, -0.2165, -0.2165, -0.1613,
+            0.1298],
+          [-0.2103, -0.6179, -0.1777, -0.1777, -0.1777, -0.1777,  0.0327,
+            0.4402],
+          [ 0.0990, -0.4653, -0.2903, -0.2903, -0.2903, -0.2903, -0.3893,
+            0.1750],
+          [ 0.0990, -0.4653, -0.2903, -0.2903, -0.2903, -0.2903, -0.3893,
+            0.1750],
+          [ 0.0990, -0.4653, -0.2903, -0.2903, -0.2903, -0.2903, -0.3893,
+            0.1750],
+          [ 0.0990, -0.4653, -0.2903, -0.2903, -0.2903, -0.2903, -0.3893,
+            0.1750],
+          [ 0.1543, -0.1190, -0.0738, -0.0738, -0.0738, -0.0738, -0.2281,
+            0.0452],
+          [ 0.3093,  0.1526, -0.1127, -0.1127, -0.1127, -0.1127, -0.4220,
+           -0.2652]]]], device='cuda:0')
+grad_input torch.Size([1, 1, 8, 8])
+&&&& weight bp ..
+actual_index [12, 15, 12, 15]
+conv2d bp new_grad_output shape torch.Size([1, 1, 4, 4])
+conv2d WW bp new_input_tensor torch.Size([1, 1, 0, 0])
+Traceback (most recent call last):
+  File "/home/yufan/labpytorch/uu/test/test_bias_conv2d_stride2.py", line 211, in <module>
+    main()
+  File "/home/yufan/labpytorch/uu/test/test_bias_conv2d_stride2.py", line 174, in main
+    out_our.sum().backward()
+  File "/home/yufan/labpytorch/torch/_tensor.py", line 308, in backward
+    torch.autograd.backward(self, gradient, retain_graph, create_graph, inputs=inputs)
+  File "/home/yufan/labpytorch/torch/autograd/__init__.py", line 155, in backward
+    Variable._execution_engine.run_backward(
+  File "/home/yufan/labpytorch/torch/autograd/function.py", line 199, in apply
+    return user_fn(self, *args)
+  File "/home/yufan/labpytorch/uu/layers/conv2d.py", line 446, in backward
+    grad_weight = torch.cudnn_convolution_backward_weight(weight_size , new_grad_output, new_input_tensor, our_padding, stride, dilation, group, False, False, False)
+RuntimeError: cuDNN error: CUDNN_STATUS_BAD_PARAM

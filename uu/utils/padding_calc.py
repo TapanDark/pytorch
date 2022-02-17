@@ -71,7 +71,7 @@ def compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg, shape_dict, 
                 if peek_conv2d_pos == 0:
                     peek_conv2d_pos = peek_position(list_op__in_chckp_seg, op_idex)
                     total_conv2d_in_seg = peek_conv2d_pos
-                    #print("total_conv2d_in_seg", total_conv2d_in_seg)
+                    print("total_conv2d_in_seg", total_conv2d_in_seg, peek_conv2d_pos)
                     
                 ph = op.padding[0]
                 pw = op.padding[1]
@@ -271,7 +271,7 @@ def get_input_tile(info:Dict, input, first_op_in_seg):
 
 def resize_grad_in(info, grad_input):
     
-    print("grad_input old", grad_input.size(), grad_input)
+    # print("grad_input old", grad_input.size(), grad_input)
     if info.padding_info != [0] * len(info.padding_info):
         top = 0 + info.padding_info[2]
         bottom = grad_input.size()[2]-info.padding_info[3]
@@ -288,7 +288,7 @@ def resize_grad_in(info, grad_input):
         #print(" resize_grad_in padding info ::")
         pd = torch.nn.ConstantPad2d(info.padding_info, 0)
         grad_input = pd(grad_input)
-        print("grad_input new", grad_input.size(), grad_input)
+        # print("grad_input new", grad_input.size(), grad_input)
         return grad_input
     else:
         return grad_input
@@ -319,91 +319,91 @@ def reshape_for_final(need_info, f_info, grad_input):
     return grad_input
 
 
-def debug_reshape_grad_out_input_tensor_for_weight_update(grad_output, input_tensor, f_info, next_f_info, weight_size, orig_padding, stride, nontiled_grad_out, nontiled_activation):
-    # debug (, nontiled_grad_out, nontiled_activation)
-    # to get disjoint part of grad_output
-    # for stride 1 and same shape in/out-put
-    # cal disjoint g_index
-    # cal input index based on f_info and pure-calc
+# def debug_reshape_grad_out_input_tensor_for_weight_update(grad_output, input_tensor, f_info, next_f_info, weight_size, orig_padding, stride, nontiled_grad_out, nontiled_activation):
+#     # debug (, nontiled_grad_out, nontiled_activation)
+#     # to get disjoint part of grad_output
+#     # for stride 1 and same shape in/out-put
+#     # cal disjoint g_index
+#     # cal input index based on f_info and pure-calc
 
     
-    Th = f_info.non_disjoint_tile_size[0]
-    Tw = f_info.non_disjoint_tile_size[1]
-    tile_top = f_info.coord[0]*Th
-    tile_bottom = tile_top+Th-1
-    tile_left = f_info.coord[1]*Tw
-    tile_right = tile_left+Tw-1
-    actual_index = [tile_left, tile_right, tile_top, tile_bottom]
+#     Th = f_info.non_disjoint_tile_size[0]
+#     Tw = f_info.non_disjoint_tile_size[1]
+#     tile_top = f_info.coord[0]*Th
+#     tile_bottom = tile_top+Th-1
+#     tile_left = f_info.coord[1]*Tw
+#     tile_right = tile_left+Tw-1
+#     actual_index = [tile_left, tile_right, tile_top, tile_bottom]
     
     
-    if next_f_info.opname != "fake":
-        current_stage_g_index = next_f_info.input_slice
-        crop = []
-        # assumption: current_stage_g_index >> actual_index
-        for i in range(len(actual_index)):
-            crop.append(abs( current_stage_g_index[i] - actual_index[i]))
+#     if next_f_info.opname != "fake":
+#         current_stage_g_index = next_f_info.input_slice
+#         crop = []
+#         # assumption: current_stage_g_index >> actual_index
+#         for i in range(len(actual_index)):
+#             crop.append(abs( current_stage_g_index[i] - actual_index[i]))
         
-        current_padd = next_f_info.padding_info
-        if len(current_padd) > 0 and current_padd != [0] * len(current_padd):
-            grad_output = grad_output[:, :, current_padd[2]:grad_output.size()[2]-current_padd[3], \
-                        current_padd[0]:grad_output.size()[3]-current_padd[1]]
-            input_tensor = input_tensor[:, :, current_padd[2]:input_tensor.size()[2]-current_padd[3], \
-                        current_padd[0]:input_tensor.size()[3]-current_padd[1]]
+#         current_padd = next_f_info.padding_info
+#         if len(current_padd) > 0 and current_padd != [0] * len(current_padd):
+#             grad_output = grad_output[:, :, current_padd[2]:grad_output.size()[2]-current_padd[3], \
+#                         current_padd[0]:grad_output.size()[3]-current_padd[1]]
+#             input_tensor = input_tensor[:, :, current_padd[2]:input_tensor.size()[2]-current_padd[3], \
+#                         current_padd[0]:input_tensor.size()[3]-current_padd[1]]
 
-        print("fake grad_out size", grad_output.size())
-        print("crop", crop, current_stage_g_index, actual_index)
-        print("##", crop[2],grad_output.size()[2]-crop[3], crop[0],grad_output.size()[3]-crop[1])
-        grad_output = grad_output[:,:,crop[2]:grad_output.size()[2]-crop[3], crop[0]:grad_output.size()[3]-crop[1]]
-        input_tensor = input_tensor[:,:,crop[2]:input_tensor.size()[2]-crop[3], crop[0]:input_tensor.size()[3]-crop[1]]
-    else:
-        print("input_tensor size", input_tensor.size())
-        grad_output = grad_output[:,:, tile_top: tile_bottom+1, tile_left: tile_right+1]
+#         print("fake grad_out size", grad_output.size())
+#         print("crop", crop, current_stage_g_index, actual_index)
+#         print("##", crop[2],grad_output.size()[2]-crop[3], crop[0],grad_output.size()[3]-crop[1])
+#         grad_output = grad_output[:,:,crop[2]:grad_output.size()[2]-crop[3], crop[0]:grad_output.size()[3]-crop[1]]
+#         input_tensor = input_tensor[:,:,crop[2]:input_tensor.size()[2]-crop[3], crop[0]:input_tensor.size()[3]-crop[1]]
+#     else:
+#         print("input_tensor size", input_tensor.size())
+#         grad_output = grad_output[:,:, tile_top: tile_bottom+1, tile_left: tile_right+1]
         
-        input_g_index = f_info.input_slice
-        out_g_index = next_f_info.input_slice
-        actual_index = [tile_left, tile_right, tile_top, tile_bottom]
+#         input_g_index = f_info.input_slice
+#         out_g_index = next_f_info.input_slice
+#         actual_index = [tile_left, tile_right, tile_top, tile_bottom]
 
-        crop = []
-        for i in range(len(actual_index)):
-            crop.append(abs( out_g_index[i] - actual_index[i]))
+#         crop = []
+#         for i in range(len(actual_index)):
+#             crop.append(abs( out_g_index[i] - actual_index[i]))
         
-        # current_padd = f_info.padding_info
-        # print("current_padd", current_padd)
-        # if len(current_padd) > 0 and current_padd != [0] * len(current_padd):
-        #     input_tensor = input_tensor[:, :, current_padd[2]:input_tensor.size()[2]-current_padd[3], \
-        #                 current_padd[0]:input_tensor.size()[3]-current_padd[1]]
-        print("grad_out size", grad_output.size())
-        print("input_tensor size", input_tensor.size())
-        print("crop", crop, out_g_index, actual_index)
-        print("##", crop[2],input_tensor.size()[2]-crop[3], crop[0],input_tensor.size()[3]-crop[1])
-        input_tensor = input_tensor[:,:,crop[2]:input_tensor.size()[2]-crop[3], crop[0]:input_tensor.size()[3]-crop[1]]
+#         # current_padd = f_info.padding_info
+#         # print("current_padd", current_padd)
+#         # if len(current_padd) > 0 and current_padd != [0] * len(current_padd):
+#         #     input_tensor = input_tensor[:, :, current_padd[2]:input_tensor.size()[2]-current_padd[3], \
+#         #                 current_padd[0]:input_tensor.size()[3]-current_padd[1]]
+#         print("grad_out size", grad_output.size())
+#         print("input_tensor size", input_tensor.size())
+#         print("crop", crop, out_g_index, actual_index)
+#         print("##", crop[2],input_tensor.size()[2]-crop[3], crop[0],input_tensor.size()[3]-crop[1])
+#         input_tensor = input_tensor[:,:,crop[2]:input_tensor.size()[2]-crop[3], crop[0]:input_tensor.size()[3]-crop[1]]
 
 
 
 
-    # for debug
-    nontiled_grad_out = nontiled_grad_out[:,:, tile_top: tile_bottom+1, tile_left: tile_right+1]
-    iH = nontiled_activation.size()[2]
-    iW = nontiled_activation.size()[3]
-    input_top = tile_top
-    input_bottom = min(iH-1, (tile_top+Th*stride[0]-1+weight_size[2]-1))
-    input_left = tile_left
-    input_right = min(iW-1, (tile_left+Tw*stride[1]-1+weight_size[3]-1))
-    nontiled_activation = nontiled_activation[:,:, input_top: input_bottom+1, input_left: input_right+1]    
-    print("A", tile_top, tile_bottom+1, tile_left, tile_right+1)
-    print("B", input_top, input_bottom+1, input_left, input_right+1)
+#     # for debug
+#     nontiled_grad_out = nontiled_grad_out[:,:, tile_top: tile_bottom+1, tile_left: tile_right+1]
+#     iH = nontiled_activation.size()[2]
+#     iW = nontiled_activation.size()[3]
+#     input_top = tile_top
+#     input_bottom = min(iH-1, (tile_top+Th*stride[0]-1+weight_size[2]-1))
+#     input_left = tile_left
+#     input_right = min(iW-1, (tile_left+Tw*stride[1]-1+weight_size[3]-1))
+#     nontiled_activation = nontiled_activation[:,:, input_top: input_bottom+1, input_left: input_right+1]    
+#     print("A", tile_top, tile_bottom+1, tile_left, tile_right+1)
+#     print("B", input_top, input_bottom+1, input_left, input_right+1)
 
     
-    print("csaved input", input_tensor.size())
-    print("cgrad_output", grad_output.size())
-    print("real nontiled_activation", nontiled_activation.size())
-    print("real nontiled_grad_out", nontiled_grad_out.size())
-    # nontiled_activation[0][0][0][0] = -99
+#     print("csaved input", input_tensor.size())
+#     print("cgrad_output", grad_output.size())
+#     print("real nontiled_activation", nontiled_activation.size())
+#     print("real nontiled_grad_out", nontiled_grad_out.size())
+#     # nontiled_activation[0][0][0][0] = -99
 
-    # correctness_check.check_equal(grad_output, nontiled_grad_out, False)
-    # correctness_check.check_equal(input_tensor, nontiled_activation, False)
+#     # correctness_check.check_equal(grad_output, nontiled_grad_out, False)
+#     # correctness_check.check_equal(input_tensor, nontiled_activation, False)
     
-    return grad_output, input_tensor
+#     return grad_output, input_tensor
 
 
 def reshape_grad_out_input_tensor_for_weight_update(grad_output, input_tensor, f_info, next_f_info, weight_size, orig_padding, stride):
@@ -418,7 +418,7 @@ def reshape_grad_out_input_tensor_for_weight_update(grad_output, input_tensor, f
     tile_left = f_info.coord[1]*Tw
     tile_right = tile_left+Tw-1
     actual_index = [tile_left, tile_right, tile_top, tile_bottom]
-    
+    print("actual_index", actual_index)
     
     if next_f_info.opname != "fake":
         current_stage_g_index = next_f_info.input_slice

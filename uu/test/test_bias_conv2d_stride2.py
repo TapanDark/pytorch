@@ -15,11 +15,11 @@ Kh = Kw = 3
 Ph = Pw = 1
 b = 1
 c = 1
-h = w = 64
-out_ch = 1
-in_ch = 1
+h = w = 32
+out_ch = 2
+in_ch = 2
 nTh = nTw = 4
-strideH = 2
+strideH = 1
 
 
 
@@ -37,7 +37,8 @@ class Net_ref(nn.Module):
                                   out_channels=out_ch,
                                   kernel_size=(Kh,Kw),
                                   bias = False,
-                                  padding=(Ph,Pw)
+                                  padding=(Ph,Pw),
+                                  stride=(1,1)
                                   )
         # w1 = (torch.reshape(torch.arange(0, in_ch*out_ch*Kh*Kw, step=1.0, dtype=torch.float), (out_ch, in_ch, Kh, Kw)))
         #b1 = torch.tensor([-1000, -2000, -3000, -4000, -5000], dtype=torch.float)
@@ -54,7 +55,7 @@ class Net_ref(nn.Module):
 
     def forward(self, x):
         out = self.conv2d_1(x)
-        #out = self.conv2d_2(out)
+        out = self.conv2d_2(out)
         #print("out.shape final", out.size(), out)
         return out
 
@@ -73,7 +74,8 @@ class Net(nn.Module):
                                   out_channels=out_ch,
                                   kernel_size=(Kh,Kw),
                                   bias = False,
-                                  padding=(Ph,Pw)
+                                  padding=(Ph,Pw),
+                                  stride=(1,1)
                                   )
         # w1 = (torch.reshape(torch.arange(0, in_ch*out_ch*Kh*Kw, step=1.0, dtype=torch.float), (out_ch, in_ch, Kh, Kw)))
         # b1 = torch.tensor([-1000, -2000, -3000, -4000, -5000], dtype=torch.float)
@@ -83,8 +85,8 @@ class Net(nn.Module):
         self.tsplit = tilesplit.TiledSplit()
         self.tcopy = tilecopy.TiledCopy()
 
-        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1,
-         #self.conv2d_2
+        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2
+           
          ])
 
         # self.conv2d_1.register_full_backward_hook(print_grad)
@@ -163,13 +165,13 @@ def main():
     out = model(input)
     # print("ref_conv2d_1.bias", model.conv2d_1.bias)
     print("out", out.size())
-    #out.sum().backward()
+    out.sum().backward()
 
     print("\n&&&&&&&&&&&&&&&&&&& OUR forward &&&&&&&&&&&&&&&&&&&\n")
 
 
     out_our = model_our(input_our)
-    #out_our.sum().backward()
+    out_our.sum().backward()
 
     print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
     print("~~ check forward correctness ~~")
