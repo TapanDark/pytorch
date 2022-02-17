@@ -75,6 +75,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             if coord_h == 0 and coord_w == 0:
                 # partial_max_tile = []
                 # assert(len(partial_max_tile) == 0), "init partial_max_tile size coord {} {} --> {}".format(coord_h, coord_w, len(partial_sums_tile))
+                del partial_max_tile_all
                 partial_max_tile_all = numpy.empty((ctx.b, ctx.c),dtype=object)
                 for itr_b in range(ctx.b):
                     # select the largest among all partial max
@@ -104,7 +105,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
             
             if coord_h == nTh-1 and coord_w == nTw-1:
                 #print("*** ",partial_max_tile_all[0][0])
-
+                del META_tile
                 META_tile = numpy.empty((ctx.b, ctx.c),dtype=object)
                 FINAL_res = torch.zeros(b,c,1,1, requires_grad=True).to(ctx.model_device)
                 for itr_b in range(ctx.b):

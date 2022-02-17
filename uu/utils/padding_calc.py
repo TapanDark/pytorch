@@ -22,8 +22,8 @@ def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, n
     
     bwd_out_shape = b_info[id(op)].cur_output_shape
     fwd_out_shape = (output_shape[2]//nTh, output_shape[3]//nTw)
-    print("bwd_out_shape ", bwd_out_shape)
-    print("fwd_out_shape ", fwd_out_shape)
+    # print("bwd_out_shape ", bwd_out_shape)
+    # print("fwd_out_shape ", fwd_out_shape)
 
 
     if not shape_compatible(fwd_out_shape, bwd_out_shape):
@@ -33,10 +33,10 @@ def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, n
         f_info = compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg.copy(), shape_dict, b_info, nTh, nTw)
 
     # print("op_list_in_seg", list_op__in_chckp_seg)
-    print("------------------------------")
-    print("f_info", f_info)
-    print("------------------------------")
-    print("b_info", b_info)
+    # print("------------------------------")
+    # print("f_info", f_info)
+    # print("------------------------------")
+    # print("b_info", b_info)
 
     assert len(f_info) != 0 and len(b_info) != 0
     info = [f_info, b_info]
@@ -149,7 +149,7 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
         next_id = -99 # end of a conv2d chain
         op_idex = 0
         peek_conv2d_pos = 0
-        print("AA", H, W)
+        #print("AA", H, W)
 
         for op in list_op__in_chckp_seg:
             uniq_id = id(op)
@@ -178,7 +178,7 @@ def compute_bwd_info_beta(output_tile_coord: List, input_shape, nTh, nTw, list_o
                 pw = op.padding[1]
                 # real_index is the key loop variable 
                 none_tiled_input_shape = shape_dict[id(op)].input_shape
-                print("BB ph {}, none_tiled_input_shape {}".format(ph, none_tiled_input_shape))
+                #print("BB ph {}, none_tiled_input_shape {}".format(ph, none_tiled_input_shape))
                 if op.stride[0] != 1:
                     padding_info, input_slice, internal_expand, real_index = conv2d_revr_padding_info_stride(real_index, none_tiled_input_shape, [ph, pw], op.stride[0], op.kernel_size[0])        
                 else:
@@ -271,7 +271,9 @@ def get_input_tile(info:Dict, input, first_op_in_seg):
 
 def resize_grad_in(info, grad_input):
     
-    # print("grad_input old", grad_input.size(), grad_input)
+
+    #print("grad_input old", grad_input.size(), grad_input)
+
     if info.padding_info != [0] * len(info.padding_info):
         top = 0 + info.padding_info[2]
         bottom = grad_input.size()[2]-info.padding_info[3]
@@ -288,7 +290,9 @@ def resize_grad_in(info, grad_input):
         #print(" resize_grad_in padding info ::")
         pd = torch.nn.ConstantPad2d(info.padding_info, 0)
         grad_input = pd(grad_input)
+
         # print("grad_input new", grad_input.size(), grad_input)
+
         return grad_input
     else:
         return grad_input
@@ -669,10 +673,10 @@ def conv2d_revr_padding_info_stride(tile_indx: List, none_tiled_output_shape, pa
     real_index = [math.floor(x / stride) for x in input_slice]
     #real_index = [(tile_left-pads[1]), (tile_right+pads[1]), (tile_top-pads[0]), (tile_bottom+pads[0])]
 
-    print("--input_slice", input_slice)
-    print("--real_index", real_index)
-    print("--padding_info", padding_info)
-    print("--internal_expand", internal_expand)
+    # print("--input_slice", input_slice)
+    # print("--real_index", real_index)
+    # print("--padding_info", padding_info)
+    # print("--internal_expand", internal_expand)
     return padding_info, input_slice, internal_expand, real_index
     
    
@@ -681,7 +685,7 @@ def conv2d_revr_padding_info_stride(tile_indx: List, none_tiled_output_shape, pa
 
 # Assume conv2d input output are same shape
 def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: List, stride, RS):
-    print("st1--", tile_indx, none_tiled_output_shape, pads, stride, RS)
+    #print("st1--", tile_indx, none_tiled_output_shape, pads, stride, RS)
     #pdb.set_trace()
     oH = none_tiled_output_shape[2]
     oW = none_tiled_output_shape[3]
@@ -689,7 +693,7 @@ def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: Lis
     iW = (oW-1)*stride+RS-2*pads[1]
     # output view
 
-    print("st1--OH IH", oH, iH)
+    #print("st1--OH IH", oH, iH)
 
 
     tile_top = tile_indx[2]
@@ -724,9 +728,9 @@ def conv2d_revr_padding_info(tile_indx: List, none_tiled_output_shape, pads: Lis
     # left , right, top, bottom; the naming is misleading; it means the relative index of current input view in its parent's view.
     # real index can have negative value and larger than iH,iW value, since it shows info one level up. 
     real_index = [(tile_left-pads[1]), (tile_right+pads[1]), (tile_top-pads[0]), (tile_bottom+pads[0])]
-    print("st1--tile_indx", tile_indx)
-    print("st1--input_slice", input_slice)
-    print("st1--real_index", real_index)
+    # print("st1--tile_indx", tile_indx)
+    # print("st1--input_slice", input_slice)
+    # print("st1--real_index", real_index)
     return padding_info, input_slice, internal_expand, real_index
 
 
