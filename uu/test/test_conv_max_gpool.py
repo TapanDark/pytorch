@@ -61,12 +61,12 @@ class Net_ref(nn.Module):
         self.avgp.register_full_backward_hook(print_grad)
 
 
-        self.block1 = nn.Sequential(*[self.conv2d_1, self.conv2d_2, self.maxpool1,]) 
+        self.block1 = nn.Sequential(*[self.conv2d_1, self.conv2d_2,self.maxgp]) 
 
     def forward(self, x):
         out = self.block1(x)
         #print("out.shape 1 ", out.size(), out)
-        out = self.avgp(out)
+        # out = self.avgp(out)
         print("out.shape 2 ", out.size(), out)
         # out = self.sft(out)
         # print("out.shape final", out.size(), out)
@@ -89,14 +89,14 @@ class Net(nn.Module):
                                         bias = False,
                                         padding=(Ph,Pw),
                                         ) 
-        self.mxp1 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
-        #self.gmaxp = gmaxpool2d.cGMaxPool2d()
+        #self.mxp1 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
+        self.gmaxp = gmaxpool2d.cGMaxPool2d()
         self.sft = nn.Softmax(dim=-1)
 
         self.tsplit = tilesplit.TiledSplit()
         self.tcopy = tilecopy.TiledCopy()
 
-        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2, self.mxp1]) #
+        self.block1 = sequential.mSequential(*[self.tsplit, self.conv2d_1, self.conv2d_2, self.gmaxp]) #
         
     # static  out_temp =None
     def forward(self, x, H, W, nTh, nTw):
@@ -118,18 +118,18 @@ class Net(nn.Module):
                 output_shape = (N,C,oH,oW)
                 info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict, model_device)
                
-                #out += self.block1( x, info, stream_structure[1], model_device, [nTh, nTw])
+                out += checkpoint.checkpoint(self.block1, x, info, stream_structure[1], model_device, [nTh, nTw])
                 #print("out", out.size(), out)
-                out_temp = self.block1(x, info, stream_structure[1], model_device, [nTh, nTw])
+                # out_temp = self.block1(x, info, stream_structure[1], model_device, [nTh, nTw])
 
-                fake_pi = info[0][-11]
-                tile_shape = fake_pi.cur_output_shape
-                tile_size = [tile_shape[0], tile_shape[1]]
-                output_index = fake_pi.input_slice
-                print("corp output", tile_shape, tile_size, output_index)
-                out = self.tcopy(out_temp, out, output_index, tile_size)
-                del out_temp
-                del info
+                # fake_pi = info[0][-11]
+                # tile_shape = fake_pi.cur_output_shape
+                # tile_size = [tile_shape[0], tile_shape[1]]
+                # output_index = fake_pi.input_slice
+                # print("corp output", tile_shape, tile_size, output_index)
+                # out = self.tcopy(out_temp, out, output_index, tile_size)
+                # del out_temp
+                # del info
 
                 # if out_temp is not None:
                 #     print("out tile", out_temp.size(), out_temp)
@@ -137,7 +137,7 @@ class Net(nn.Module):
 
         #out = out_temp
         #out = self.sft(out)
-        
+        print("out", out.size(), out)
         return out
 
 
@@ -172,12 +172,12 @@ def main():
     out = model(input, H, W, nTh, nTw )
 
 
-    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
-    # print("~~ check forward correctness ~~")
+    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    print("~~ check forward correctness ~~")
     # print("out ref ", out_ref)
     # print("out  ", out)
-    # correctness_check.check_equal(out, out_ref, False)
-    # print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
+    correctness_check.check_equal(out, out_ref, False)
+    print("\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n")
 
 
     # out.sum().backward()
@@ -233,8 +233,7 @@ if __name__=="__main__":
 
     H = 16
     W = 16
-    oH = H//2
-    oW = W//2
+   
     nTh = 2
     nTw = 2
     main()
