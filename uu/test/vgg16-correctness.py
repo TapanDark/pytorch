@@ -408,7 +408,7 @@ class Net(nn.Module):
                 # TODO: here we have to somehow provide static info and num_conv. 
                 input_shape = (N,C,H,W)
                 output_shape = (N,C,oH,oW)
-                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict)
+                info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict, model_device)
     # add grad_payload as negate keys
                 #info[0].update(grad_dict_bk)
       # add grad_payload as negate keys
@@ -513,11 +513,11 @@ def main():
     # # not_same_num = correctness_check.point_wise_compare_4d(1,1,oH, oW, out, out_ref)
     correctness_check.check_equal(out, out_ref, False)
 
-    # print("#### compare grad_in")
-    # # print("input ref grad", input_ref.grad)
-    # # print("input grad", input.grad)
-    # #not_same_num = correctness_check.point_wise_compare_4d(1,1,H, W, input.grad, input_ref.grad.to('cpu'))
-    # correctness_check.check_equal(input.grad, input_ref.grad, False)
+    print("#### compare grad_in")
+    # print("input ref grad", input_ref.grad)
+    # print("input grad", input.grad)
+    #not_same_num = correctness_check.point_wise_compare_4d(1,1,H, W, input.grad, input_ref.grad.to('cpu'))
+    correctness_check.check_equal(input.grad, input_ref.grad, False)
 
 
     print("#### compare w1")
