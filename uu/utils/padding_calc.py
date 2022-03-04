@@ -71,7 +71,7 @@ def compute_fwd_info_beta(output_tile_coord, list_op__in_chckp_seg, shape_dict, 
                 if peek_conv2d_pos == 0:
                     peek_conv2d_pos = peek_position(list_op__in_chckp_seg, op_idex)
                     total_conv2d_in_seg = peek_conv2d_pos
-                    print("total_conv2d_in_seg", total_conv2d_in_seg, peek_conv2d_pos)
+                    #print("total_conv2d_in_seg", total_conv2d_in_seg, peek_conv2d_pos)
                     
                 ph = op.padding[0]
                 pw = op.padding[1]
@@ -422,7 +422,7 @@ def reshape_grad_out_input_tensor_for_weight_update(grad_output, input_tensor, f
     tile_left = f_info.coord[1]*Tw
     tile_right = tile_left+Tw-1
     actual_index = [tile_left, tile_right, tile_top, tile_bottom]
-    print("actual_index", actual_index)
+    #print("actual_index", actual_index)
     
     if next_f_info.opname != "fake":
         current_stage_g_index = next_f_info.input_slice

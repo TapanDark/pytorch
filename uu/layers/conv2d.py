@@ -65,6 +65,14 @@ class TiledConv2dFunction(torch.autograd.Function):
                     out = F.conv2d(input, weight, bias, stride,
                             padding, dilation, groups)
 
+<<<<<<< HEAD
+=======
+                    
+                # print("== tiled conv2d forward / last layer conv compute nonchp", stride, weight.size())
+                # print("shape input_tile_for_next\n", out.size())
+                # print("net_ out\n", out.size())
+
+>>>>>>> fc0c764b0cd4ffaaf0d2b5587e855551d5beb3fd
                 #remove input buffer
                 #del input
             else:
@@ -198,7 +206,7 @@ class TiledConv2dFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        print("--------------------------------------------------")
+        #print("--------------------------------------------------")
         if not USE_DEFAULT_CTX:
             myctx = myctx_dict[ctx.uniq_id]
             f_info = myctx.info[0][myctx.uniq_id]
@@ -376,6 +384,12 @@ class TiledConv2dFunction(torch.autograd.Function):
                             #print("SS new_grad_out shape", new_grad_out.size())
                             grad_input = torch.cudnn_convolution_backward_input(input_size, new_grad_out, weight_tensor, our_padding, stride, dilation, group, False, False, False)
 
+<<<<<<< HEAD
+=======
+                            print("SS brefore reshape grad_input", grad_input.size())
+
+
+>>>>>>> fc0c764b0cd4ffaaf0d2b5587e855551d5beb3fd
                             grad_input = padding_calc.reshape_for_final(ctx.info[1][-11], f_info, grad_input)
 
                             #print("SS grad_input", grad_input.size(), grad_input)

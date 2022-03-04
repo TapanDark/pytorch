@@ -23,7 +23,7 @@ myctx_dict = {}
 partial_max_tile_all = None
 # BK_FLAG = False
 
-ROUND_PRECI = 4
+ROUND_PRECI = 16
 FINAL_res = None
 # FINAL_ind = None
 META_tile = None
