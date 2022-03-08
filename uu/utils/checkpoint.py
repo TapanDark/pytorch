@@ -47,10 +47,10 @@ def detach_variable(inputs: Tuple[Any, ...]) -> Tuple[torch.Tensor, ...]:
 
 
 class cCheckpoint(torch.autograd.Function):
+    BIG_INPUT = None
     @staticmethod
     def forward(ctx, run_function, preserve_rng_state, *args):
-        #print("in customized checkpoint forward", len(args))
-        #print("args", args)
+        print("in customized checkpoint forward", len(args), args[0].size())
         check_backward_validity(args)
         ctx.run_function = run_function
         ctx.preserve_rng_state = preserve_rng_state
@@ -68,12 +68,30 @@ class cCheckpoint(torch.autograd.Function):
         # lets restrict last one is info
         # args[0].requires_grad=True      #??
         #print("input size",args[0].size() )
-        ctx.save_for_backward(args[0])
-        ctx.payload = args[1:]
+
+        isTileReader = args[-1]
+
+        #ctx.save_for_backward(args[0])
+        if isTileReader == False:
+            if cCheckpoint.BIG_INPUT is None:
+                cCheckpoint.BIG_INPUT = args[0]
+                #print("Once ??")
+            
+            ctx.payload = args[1:]
+            ctx.isTileReader = isTileReader
+            #print(" ctx.payload ",  len(ctx.payload), ctx.payload[-1] )
+        else:
+            ctx.save_for_backward(args[0])
+            ctx.payload = args[1:]
+            ctx.isTileReader = isTileReader
+            #print(" ctx.payload ",  len(ctx.payload), ctx.payload[-1] )
+
         is_ccheckpoint = True
         args = list(args)
         args.append(is_ccheckpoint)
         args = tuple(args)
+
+        
         
         with torch.no_grad():
             outputs = run_function(*args)
@@ -84,17 +102,27 @@ class cCheckpoint(torch.autograd.Function):
         # 1) get the tile from cpu
         # 2) fwd per tile
         # 3) bwd 
-        #print("\n############# Enter checkpointing bkward ####")
+        # print("\n############# Enter checkpointing bkward ####")
         if not torch.autograd._is_checkpoint_valid():
             raise RuntimeError("Checkpointing is not compatible with .grad(), please use .backward() if possible")
-        inputs = ctx.saved_tensors
+        
+        #print("ctx.isTileReader :",ctx.isTileReader)
+        
+        if ctx.isTileReader == False:
+            assert cCheckpoint.BIG_INPUT is not None
+            inputs = cCheckpoint.BIG_INPUT 
+            inputs = [inputs]
+        else:
+            inputs = ctx.saved_tensors
+            inputs = list(inputs)
+
         payload = list(ctx.payload)
-        inputs = list(inputs)
         inputs.extend(payload)
+        inputs = tuple(inputs)
         #print("inputs len", len(inputs), len(payload))
 
 
-        inputs = tuple(inputs)
+        
         
         # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # memUsage = memory.MeasureMemory(device)
@@ -129,7 +157,7 @@ class cCheckpoint(torch.autograd.Function):
         if isinstance(outputs, torch.Tensor):
             outputs = (outputs,)
 
-        # print("#############", len(outputs))
+        #print("#############", len(outputs))
         # print(args)
         # print (outputs[0].size())
         # print (args[0].size())

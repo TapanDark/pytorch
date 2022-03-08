@@ -32,7 +32,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
     # create a static variable
     @staticmethod
     def forward(ctx, *inputs):
-        #print("\n^^^^^cGmaxPool2dFunction fwd")
+        # print("\n^^^^^cGmaxPool2dFunction fwd")
         #global BK_FLAG
         global FINAL_res
         # global FINAL_ind
@@ -214,7 +214,7 @@ class cGMaxPool2dFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        # print("\n^^^^^cGGMaxPool2dFunction bwd")
+        #print("\n^^^^^cGGMaxPool2dFunction bwd")
         #print("grad_output", grad_output.size())
         #print("META_tile", META_tile)
         if USE_DEFAULT_CTX:

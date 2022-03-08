@@ -23,7 +23,8 @@ class TiledConv2dFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, bias, stride,
                         padding, dilation, groups, info, uniq_id, is_ccheckpoint):    
-        #print("~~~~~~~~~~~~~~TiledConv2dFunction #####"   ) 
+        #print("~~~~~~~~~~~~~~TiledConv2dFunction FWD #####"   ) 
+        #print("??")
         if USE_DEFAULT_CTX:
             c_info = info[0][uniq_id]   
             # print("current fwd info", c_info)
@@ -203,12 +204,12 @@ class TiledConv2dFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        #print("--------------------------------------------------")
+        #print("---------------------bp con2d-----------------------------")
         if not USE_DEFAULT_CTX:
             myctx = myctx_dict[ctx.uniq_id]
             f_info = myctx.info[0][myctx.uniq_id]
             b_info = myctx.info[1][myctx.uniq_id]
-            #print("I am", f_info.coord)
+            # print("I am", f_info.coord)
             if myctx.input.is_cuda:
                 if torch.backends.cudnn.enabled:
                     #print("@@@ using cudnn bkw")
@@ -340,7 +341,7 @@ class TiledConv2dFunction(torch.autograd.Function):
             #print("I am", f_info.coord)
             if ctx.input.is_cuda:
                 if torch.backends.cudnn.enabled:
-                    print("@@@ using cudnn bkw")
+                    #print("@@@ using cudnn bkw")
                     weight_tensor = ctx.weight
                     weight_size = weight_tensor.size()
                     padding = ctx.padding   #original padding

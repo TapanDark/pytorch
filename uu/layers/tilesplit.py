@@ -3,15 +3,17 @@ from uu.utils import padding_calc
 
 big_grad_in = None
 class TiledSplitFunction(torch.autograd.Function):
- 
+    BIG_INPUT = None
     @staticmethod
     def forward(ctx, *inputs):
         # here we have to decide sending to machine or not.
         # also we assume, the tiling only on H/W for a conv2d
+
+        #with torch.no_grad():
         x = inputs[0] 
         info = inputs[1]
         #print("tsplit tile coor fwd", info[1][-11].coord)
-         
+        
         first_op_in_seg = id(inputs[2])
         model_device = inputs[3]
         ctx.num_tile = inputs[4]
@@ -66,16 +68,17 @@ class TiledSplitFunction(torch.autograd.Function):
         #     big_grad_in = torch.zeros(N, C, H, W) 
         
 
-        return big_grad_in, None, None, None, None
+        return big_grad_in, None, None, None, None, None
        
 class TiledSplit(torch.nn.Module):
     def __init__(self):
         super(TiledSplit, self).__init__()
 
     def forward(self, *inputs):
-        if len(inputs) == 5:
+        # add isTileRead as one more arg
+        if len(inputs) == 6:
             is_ccheckpoint = False
-        elif len(inputs) == 6:
+        elif len(inputs) == 7:
             is_ccheckpoint = inputs[-1]
         else:
             print("missing info in split")
