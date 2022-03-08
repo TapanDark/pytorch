@@ -513,11 +513,11 @@ def main():
     # # not_same_num = correctness_check.point_wise_compare_4d(1,1,oH, oW, out, out_ref)
     correctness_check.check_equal(out, out_ref, False)
 
-    # print("#### compare grad_in")
-    # # print("input ref grad", input_ref.grad)
-    # # print("input grad", input.grad)
-    # #not_same_num = correctness_check.point_wise_compare_4d(1,1,H, W, input.grad, input_ref.grad.to('cpu'))
-    # correctness_check.check_equal(input.grad, input_ref.grad, False)
+    print("#### compare grad_in")
+    # print("input ref grad", input_ref.grad)
+    # print("input grad", input.grad)
+    #not_same_num = correctness_check.point_wise_compare_4d(1,1,H, W, input.grad, input_ref.grad.to('cpu'))
+    correctness_check.check_equal(input.grad, input_ref.grad, False)
 
 
     print("#### compare w1")
