@@ -1,7 +1,7 @@
 import torch
 from typing import Dict, List
 from torch.autograd.variable import Variable
-from uu.layers import maxpool2d, conv2d, tilesplit, relu, gavgpool2d, gmaxpool2d
+from uu.layers import maxpool2d, conv2d, tilesplit, relu, gavgpool2d, gmaxpool2d, move
 import math
 
 from uu.utils import correctness_check
@@ -12,7 +12,7 @@ def compute_info_beta(output_tile_coord: List, input_shape, output_shape, nTh, n
     list_op__in_chckp_seg = []
     # just extract prue conv-max linklist
     for op in stream_structure._modules.values():
-        if isinstance(op, tilesplit.TiledSplit) or isinstance(op, relu.cReLu):
+        if isinstance(op, tilesplit.TiledSplit) or isinstance(op, relu.cReLu) or isinstance(op, move.dMove):
             continue
         list_op__in_chckp_seg.append(op)
         #print("hash", id(op))

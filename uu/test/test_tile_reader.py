@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.cuda import init
 from uu.utils import shape_infer 
 from uu.utils import padding_calc
-from uu.layers import maxpool2d, conv2d, sequential, tilesplit, tilecopy, relu, gavgpool2d, gmaxpool2d
+from uu.layers import maxpool2d, conv2d, sequential, tilesplit, tilecopy, relu, gavgpool2d, gmaxpool2d, move
 from torch.nn.parameter import Parameter
 from uu.utils import correctness_check 
 from uu.utils import memory 
@@ -242,12 +242,12 @@ class Net_ref(nn.Module):
         out = self.maxgp(out)
 
         print("out.shape", out.size())
-        # out = self.flat(out)
-        # print("out.shape", out.size())
-        # out = self.fc1(out)
-        # print("out.shape", out.size())
-        # out = self.sft(out)
-        # print("out.shape", out.size())
+        out = self.flat(out)
+        print("out.shape", out.size())
+        out = self.fc1(out)
+        print("out.shape", out.size())
+        out = self.sft(out)
+        print("out.shape", out.size())
 
     
         return out
@@ -372,8 +372,8 @@ class VGG_TT_TILE(nn.Module):
 
         self.tsplit = tilesplit.TiledSplit()
         self.tcopy = tilecopy.TiledCopy()
-
-        self.block1 = sequential.mSequential(*[self.conv2d_1, self.relu, self.conv2d_2, self.relu,self.mxp1, \
+        self.movnode = move.dMove()
+        self.block1 = sequential.mSequential(*[self.movnode, self.conv2d_1, self.relu, self.conv2d_2, self.relu,self.mxp1, \
                                                 self.conv2d_3, self.relu, self.conv2d_4, self.relu, self.mxp2,  \
                                                 self.conv2d_5, self.relu, self.conv2d_6, self.relu, self.conv2d_7, self.relu, self.mxp3, \
                                                 self.conv2d_8, self.relu, self.conv2d_9, self.relu, self.conv2d_10, self.relu, self.mxp4, \
@@ -403,7 +403,7 @@ class VGG_TT_TILE(nn.Module):
             for j in range(0,nTw):
                 print("##coord", [i,j])
                 info = padding_calc.compute_info_beta([i,j], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict,  model_device)
-                first_op_in_seg = id(stream_structure[0])
+                first_op_in_seg = id(stream_structure[1])
                 # print("first_op_in_seg", first_op_in_seg)
 
                 pi = info[0][first_op_in_seg]
@@ -437,33 +437,21 @@ class VGG_TT_TILE(nn.Module):
 
 
         #out = torch.zeros(N, C, oH, oW, requires_grad=True).cuda()
-
+        isTileReader = True
         for coord, tile in tile_loader:
             print("coord", coord)
             info = padding_calc.compute_info_beta([coord[0],coord[1]], input_shape, output_shape, nTh, nTw, stream_structure, shape_dict,  model_device)
 
-            # send tile to proper device
-            is_m_cuda = True if "cuda" in str(model_device) else False
-            input_is_cuda = tile.is_cuda
-            if input_is_cuda != is_m_cuda:
-                # print(model_device)
-                if is_m_cuda == True: # model is on GPU 
-                    tile = tile.to(model_device)    # explicitly load input tile to device 
-                else:
-                    device = torch.device("cpu")
-                    tile = tile.to(device) 
-            # DONE sending to device 
-
             # # have to accumulate here otherwise no bp.
             #TODO: potential issue for the input.grad computation.
             # It will be computed now; since we are avoiding useing a customized op to dispatch input....
-            out += checkpoint.checkpoint(self.block1, tile, info)
+            out += checkpoint.checkpoint(self.block1, tile, info, model_device, isTileReader)
             del info
 
         print("FF", out.size())   
-        # out = torch.flatten(out, 1)
-        # out = self.fc1(out)
-        # out = self.sft(out)
+        out = torch.flatten(out, 1)
+        out = self.fc1(out)
+        out = self.sft(out)
         return out
 
 
@@ -592,7 +580,7 @@ def main():
     print("#### compare w13")
     correctness_check.check_equal(model_ref.conv2d_13.weight.grad, model.conv2d_13.weight.grad, False)
 
-
+    print(model_ref.conv2d_1.weight.grad[0,0,:,:])
 
     # print("#### compare bias1")
     # correctness_check.check_equal(model_ref.conv2d_1.bias.grad, model.conv2d_1.bias.grad, False)

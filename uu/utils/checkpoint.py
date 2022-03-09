@@ -3,7 +3,7 @@ import warnings
 from typing import Any, Iterable, List, Tuple
 from torch.autograd.variable import Variable
 from uu.utils import memory 
-
+import os
 
 def check_backward_validity(inputs: Iterable[Any]) -> None:
     if not any(inp.requires_grad for inp in inputs if isinstance(inp, torch.Tensor)):
@@ -50,7 +50,7 @@ class cCheckpoint(torch.autograd.Function):
     BIG_INPUT = None
     @staticmethod
     def forward(ctx, run_function, preserve_rng_state, *args):
-        print("in customized checkpoint forward", len(args), args[0].size())
+        #print("in customized checkpoint forward")
         check_backward_validity(args)
         ctx.run_function = run_function
         ctx.preserve_rng_state = preserve_rng_state
@@ -73,9 +73,12 @@ class cCheckpoint(torch.autograd.Function):
 
         #ctx.save_for_backward(args[0])
         if isTileReader == False:
-            if cCheckpoint.BIG_INPUT is None:
+            #print("tile cooor", args[1][1][-11].coord)
+            tile_coord = args[1][1][-11].coord
+
+            if tile_coord == [0,0]:
                 cCheckpoint.BIG_INPUT = args[0]
-                #print("Once ??")
+                print("Once ?? in customized checkpoint forward"," PID:", os.getpid(), len(args), args[0].size(), args[0][0,0,0,0])
             
             ctx.payload = args[1:]
             ctx.isTileReader = isTileReader
@@ -102,7 +105,7 @@ class cCheckpoint(torch.autograd.Function):
         # 1) get the tile from cpu
         # 2) fwd per tile
         # 3) bwd 
-        # print("\n############# Enter checkpointing bkward ####")
+       # print("\n############# Enter checkpointing bkward ####")
         if not torch.autograd._is_checkpoint_valid():
             raise RuntimeError("Checkpointing is not compatible with .grad(), please use .backward() if possible")
         
@@ -179,7 +182,7 @@ class cCheckpoint(torch.autograd.Function):
         grads = tuple(inp.grad if isinstance(inp, torch.Tensor) else None
                       for inp in detached_inputs)
         #print("HREREERE", grads[0].size())
-        
+       
         res = (None, None) + grads
         return  res
 
