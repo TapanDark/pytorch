@@ -308,6 +308,7 @@ class TiledConv2dFunction(torch.autograd.Function):
                         new_grad_output, new_input_tensor = padding_calc.reshape_grad_out_input_tensor_for_weight_update(grad_output, input_tensor, \
                                                             f_info, next_f_info, weight_size,\
                                                             padding, stride)
+                        #print("conv2d bk", new_grad_output.size(), new_input_tensor.size())
                         grad_weight = torch.cudnn_convolution_backward_weight(weight_size , new_grad_output, new_input_tensor, our_padding, stride, dilation, group, False, False, False)
                         temp_b = torch.sum(new_grad_output, (0,2,3))
                         if ctx.needs_input_grad[2]:

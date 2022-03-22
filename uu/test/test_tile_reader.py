@@ -19,12 +19,12 @@ Pw = 1
 chanel = C = 3
 batch = N = 1
 
-H = 512
-W = 512
+H = 256
+W = 384
 oH = H//32
 oW = W//32
-nTh = 4
-nTw = 4
+nTh = 2
+nTw = 3
 
 li = []
 li_act = []
@@ -145,8 +145,8 @@ class Net_ref(nn.Module):
         self.maxpool5 = nn.MaxPool2d((2,2), (2,2))
         
         
-        self.maxgp = nn.MaxPool2d(oH, stride=1)
-        self.avggp = nn.AvgPool2d(oH, stride=1)
+        self.maxgp = nn.AdaptiveMaxPool2d((1,1))
+        self.avggp =  nn.AdaptiveAvgPool2d((1,1))
         self.flat = nn.Flatten()
         in_feature = 512
         self.fc1 = nn.Linear(in_feature, 1024, bias=False)
@@ -359,7 +359,7 @@ class VGG_TT_TILE(nn.Module):
                                         padding=(Ph,Pw),
                                         )
 
-        self.mxp5 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
+        #self.mxp5 = maxpool2d.cMaxPool2d((2, 2), (2, 2))
         self.relu = relu.cReLu()   
 
 
@@ -377,7 +377,7 @@ class VGG_TT_TILE(nn.Module):
                                                 self.conv2d_3, self.relu, self.conv2d_4, self.relu, self.mxp2,  \
                                                 self.conv2d_5, self.relu, self.conv2d_6, self.relu, self.conv2d_7, self.relu, self.mxp3, \
                                                 self.conv2d_8, self.relu, self.conv2d_9, self.relu, self.conv2d_10, self.relu, self.mxp4, \
-                                                self.conv2d_11, self.relu, self.conv2d_12, self.relu, self.conv2d_13, self.relu, self.mxp5, self.gmaxp]) #
+                                                self.conv2d_11, self.relu, self.conv2d_12, self.relu, self.conv2d_13, self.relu, self.gmaxp]) #
 
         
         in_feature = 512
@@ -582,46 +582,46 @@ def main():
 
     print(model_ref.conv2d_1.weight.grad[0,0,:,:])
 
-    # print("#### compare bias1")
-    # correctness_check.check_equal(model_ref.conv2d_1.bias.grad, model.conv2d_1.bias.grad, False)
+    print("#### compare bias1")
+    correctness_check.check_equal(model_ref.conv2d_1.bias.grad, model.conv2d_1.bias.grad, False)
     
-    # print("#### compare bias2")
-    # correctness_check.check_equal(model_ref.conv2d_2.bias.grad, model.conv2d_2.bias.grad, False)
+    print("#### compare bias2")
+    correctness_check.check_equal(model_ref.conv2d_2.bias.grad, model.conv2d_2.bias.grad, False)
     
-    # print("#### compare bias3")
-    # correctness_check.check_equal(model_ref.conv2d_3.bias.grad, model.conv2d_3.bias.grad, False)
+    print("#### compare bias3")
+    correctness_check.check_equal(model_ref.conv2d_3.bias.grad, model.conv2d_3.bias.grad, False)
     
-    # print("#### compare bias4")
-    # correctness_check.check_equal(model_ref.conv2d_4.bias.grad, model.conv2d_4.bias.grad, False)
+    print("#### compare bias4")
+    correctness_check.check_equal(model_ref.conv2d_4.bias.grad, model.conv2d_4.bias.grad, False)
     
-    # print("#### compare bias5")
-    # correctness_check.check_equal(model_ref.conv2d_5.bias.grad, model.conv2d_5.bias.grad, False)
+    print("#### compare bias5")
+    correctness_check.check_equal(model_ref.conv2d_5.bias.grad, model.conv2d_5.bias.grad, False)
     
-    # print("#### compare bias6")
-    # correctness_check.check_equal(model_ref.conv2d_6.bias.grad, model.conv2d_6.bias.grad, False)
+    print("#### compare bias6")
+    correctness_check.check_equal(model_ref.conv2d_6.bias.grad, model.conv2d_6.bias.grad, False)
     
-    # print("#### compare bias7")
-    # correctness_check.check_equal(model_ref.conv2d_7.bias.grad, model.conv2d_7.bias.grad, False)
+    print("#### compare bias7")
+    correctness_check.check_equal(model_ref.conv2d_7.bias.grad, model.conv2d_7.bias.grad, False)
     
-    # print("#### compare bias8")
-    # correctness_check.check_equal(model_ref.conv2d_8.bias.grad, model.conv2d_8.bias.grad, False)
+    print("#### compare bias8")
+    correctness_check.check_equal(model_ref.conv2d_8.bias.grad, model.conv2d_8.bias.grad, False)
     
-    # print("#### compare bias9")
-    # correctness_check.check_equal(model_ref.conv2d_9.bias.grad, model.conv2d_9.bias.grad, False)
+    print("#### compare bias9")
+    correctness_check.check_equal(model_ref.conv2d_9.bias.grad, model.conv2d_9.bias.grad, False)
     
-    # print("#### compare bias10")
-    # correctness_check.check_equal(model_ref.conv2d_10.bias.grad, model.conv2d_10.bias.grad, False)
+    print("#### compare bias10")
+    correctness_check.check_equal(model_ref.conv2d_10.bias.grad, model.conv2d_10.bias.grad, False)
     
-    # print("#### compare bias11")
-    # correctness_check.check_equal(model_ref.conv2d_11.bias.grad, model.conv2d_11.bias.grad, False)
+    print("#### compare bias11")
+    correctness_check.check_equal(model_ref.conv2d_11.bias.grad, model.conv2d_11.bias.grad, False)
     
-    # print("#### compare bias12")
-    # correctness_check.check_equal(model_ref.conv2d_12.bias.grad, model.conv2d_12.bias.grad, False)
+    print("#### compare bias12")
+    correctness_check.check_equal(model_ref.conv2d_12.bias.grad, model.conv2d_12.bias.grad, False)
     
-    # print("#### compare bias13")
-    # correctness_check.check_equal(model_ref.conv2d_13.bias.grad, model.conv2d_13.bias.grad, False)
+    print("#### compare bias13")
+    correctness_check.check_equal(model_ref.conv2d_13.bias.grad, model.conv2d_13.bias.grad, False)
 
-    # print(model_ref.conv2d_1.weight.grad[0,0,:,:])
+    print(model_ref.conv2d_1.weight.grad[0,0,:,:])
 
 
 

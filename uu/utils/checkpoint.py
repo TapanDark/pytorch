@@ -84,6 +84,7 @@ class cCheckpoint(torch.autograd.Function):
             ctx.isTileReader = isTileReader
             #print(" ctx.payload ",  len(ctx.payload), ctx.payload[-1] )
         else:
+            #print("tile cooor", args[1][1][-11].coord,args[0].size() )
             ctx.save_for_backward(args[0])
             ctx.payload = args[1:]
             ctx.isTileReader = isTileReader
@@ -117,6 +118,7 @@ class cCheckpoint(torch.autograd.Function):
             inputs = [inputs]
         else:
             inputs = ctx.saved_tensors
+            #print("BK checkpoint cooor", ctx.payload[0][1][-11].coord, inputs[0].size() )
             inputs = list(inputs)
 
         payload = list(ctx.payload)
@@ -158,6 +160,7 @@ class cCheckpoint(torch.autograd.Function):
         # print(memory.MemSize(initmem))      
 
         if isinstance(outputs, torch.Tensor):
+            #print("bk recom output", outputs.size())
             outputs = (outputs,)
 
         #print("#############", len(outputs))
