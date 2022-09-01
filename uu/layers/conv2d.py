@@ -513,6 +513,7 @@ class TiledConv2d(_ConvNd):
         
         tconv2d = TiledConv2dFunction.apply
         uniq_id = id(self)
+        print("id keys %s\n My key: %s"%(info[0].keys(), id(self)))
         pi = info[0][uniq_id]
         
         if pi.op_idex == 0: # last stage in the segment or in the global network
